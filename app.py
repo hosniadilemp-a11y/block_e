@@ -48,8 +48,8 @@ def login():
         
         conn = get_db_connection()
         if username == 'admin':
-            # Check admin password from environment variable
-            admin_pass = os.environ.get('ADMIN_PASSWORD') or os.environ.get('SECRET_KEY')
+            # Strictly use ADMIN_PASSWORD from environment
+            admin_pass = os.environ.get('ADMIN_PASSWORD')
             if admin_pass and password == admin_pass:
                 # Success for admin
                 user = conn.execute("SELECT * FROM users WHERE username = 'admin'").fetchone()
@@ -265,9 +265,20 @@ def depenses():
     q += " ORDER BY date DESC"
     
     deps = conn.execute(q, tuple(params)).fetchall()
-    categories = conn.execute("SELECT DISTINCT categorie FROM depenses").fetchall()
+    categories_rows = conn.execute("SELECT DISTINCT categorie FROM depenses").fetchall()
+    
+    # Calculate Total for current filtered view
+    q_total = "SELECT SUM(montant) FROM depenses WHERE 1=1"
+    if annee != 'all': q_total += " AND strftime('%Y', date) = ?"
+    if cat: q_total += " AND categorie = ?"
+    
+    total_val = conn.execute(q_total, tuple(params)).fetchone()[0] or 0
+    
     conn.close()
-    return render_template('depenses.html', depenses=deps, categories=[c['categorie'] for c in categories], current_cat=cat, current_annee=str(annee))
+    return render_template('depenses.html', depenses=deps, 
+                           categories=[c['categorie'] for c in categories_rows], 
+                           current_cat=cat, current_annee=str(annee), 
+                           total_depenses=total_val)
 
 # Exports
 @app.route('/export/depenses')

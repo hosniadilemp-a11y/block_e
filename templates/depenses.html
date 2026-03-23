@@ -2,8 +2,13 @@
 {% block title %}Dépenses ({% if current_annee == 'all' %}Toutes les années{% else %}{{ current_annee }}{% endif %}){% endblock %}
 {% block content %}
 <div class="glass-panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h2><i class="fa-solid fa-money-bill-trend-up text-danger"></i> Historique des dépenses</h2>
+        <div class="glass-panel" style="background: var(--bg-main); padding: 0.6rem 1.2rem; border-radius: 12px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <span style="font-size: 0.9rem; color: var(--text-muted);">Total Dépenses :</span>
+            <span style="font-size: 1.3rem; font-weight: 800; color: var(--danger); margin-left: 0.5rem;">{{ "{:,.0f}".format(total_depenses) }} DA</span>
+        </div>
+    </div>
         
         <!-- Filtres -->
         <form method="GET" style="display: flex; gap: 0.5rem; align-items: center;">
