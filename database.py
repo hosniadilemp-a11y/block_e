@@ -19,12 +19,18 @@ class UnifiedCursor:
             query = re.sub(r"strftime\(['\"]%Y['\"],\s*([^)]+)\)", r"TO_CHAR(\1, 'YYYY')", query, flags=re.IGNORECASE)
             query = re.sub(r"strftime\(['\"]%m['\"],\s*([^)]+)\)", r"TO_CHAR(\1, 'MM')", query, flags=re.IGNORECASE)
             
-            # 2. Handle Insert & lastrowid
+            # 2. Boolean integer comparisons: is_active = 1 -> is_active = TRUE
+            query = re.sub(r'\b(is_active)\s*=\s*1\b', r'\1 = TRUE', query, flags=re.IGNORECASE)
+            query = re.sub(r'\b(is_active)\s*=\s*0\b', r'\1 = FALSE', query, flags=re.IGNORECASE)
+            query = re.sub(r'SET\s+(is_active)\s*=\s*1\b', r'SET \1 = TRUE', query, flags=re.IGNORECASE)
+            query = re.sub(r'SET\s+(is_active)\s*=\s*0\b', r'SET \1 = FALSE', query, flags=re.IGNORECASE)
+            
+            # 3. Handle Insert & lastrowid
             is_insert = query.strip().upper().startswith('INSERT')
             if is_insert and 'RETURNING' not in query.upper():
                 query += " RETURNING id"
 
-            # 3. Escape placeholders
+            # 4. Escape placeholders
             query = query.replace('?', '%s')
             query = query.replace('%', '%%').replace('%%s', '%s')
             
