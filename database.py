@@ -8,6 +8,20 @@ load_dotenv()
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# ── Connection pool for PostgreSQL ───────────────────────────────────────────
+_pg_pool = None
+
+def _get_pool():
+    global _pg_pool
+    if _pg_pool is None and DATABASE_URL and DATABASE_URL.startswith('postgres'):
+        from psycopg2 import pool
+        _pg_pool = pool.ThreadedConnectionPool(
+            minconn=1,
+            maxconn=10,
+            dsn=DATABASE_URL
+        )
+    return _pg_pool
+
 
 class RowProxy:
     """Row wrapper supporting both row['col'] and row[0] indexing — like sqlite3.Row."""
@@ -115,9 +129,10 @@ class UnifiedCursor:
 
 
 class UnifiedConnection:
-    def __init__(self, conn, is_postgres):
+    def __init__(self, conn, is_postgres, pool=None):
         self.conn = conn
         self.is_postgres = is_postgres
+        self._pool = pool  # keep reference to return connection when done
 
     def execute(self, query, params=None):
         cur = self.cursor()
@@ -127,21 +142,26 @@ class UnifiedConnection:
         self.conn.commit()
 
     def close(self):
-        self.conn.close()
+        if self._pool:
+            # Return connection to pool instead of closing
+            self._pool.putconn(self.conn)
+        else:
+            self.conn.close()
 
     def cursor(self):
         if self.is_postgres:
-            return UnifiedCursor(self.conn.cursor(), True)
+            from psycopg2.extras import DictCursor
+            return UnifiedCursor(self.conn.cursor(cursor_factory=DictCursor), True)
         else:
             return UnifiedCursor(self.conn.cursor(), False)
 
 
 def get_db_connection():
-    if DATABASE_URL and DATABASE_URL.startswith('postgres'):
-        import psycopg2
-        from psycopg2.extras import DictCursor
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=DictCursor)
-        return UnifiedConnection(conn, True)
+    pool = _get_pool()
+    if pool:
+        conn = pool.getconn()
+        conn.autocommit = False
+        return UnifiedConnection(conn, True, pool=pool)
     else:
         db_path = os.environ.get('SQLITE_DB', 'database.db')
         conn = sqlite3.connect(db_path)

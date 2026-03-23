@@ -377,6 +377,21 @@ def delete_annonce(id):
     conn.close()
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/annonce/edit/<int:id>', methods=['POST'])
+@admin_required
+def edit_annonce(id):
+    titre = request.form.get('titre')
+    contenu = request.form.get('contenu')
+    if titre and contenu:
+        conn = get_db_connection()
+        conn.execute("UPDATE annonces SET titre = ?, contenu = ? WHERE id = ?", (titre, contenu, id))
+        conn.commit()
+        conn.close()
+        add_log(session['user_id'], 'Édition Annonce', f'ID {id}')
+        flash("Annonce mise à jour.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+
 @app.route('/admin/cotisation', methods=['POST'])
 @admin_required
 def add_cotisation():

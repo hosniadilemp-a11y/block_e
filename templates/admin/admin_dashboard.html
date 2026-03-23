@@ -199,7 +199,11 @@
                             {% if ann['chemin_document'] %}<i class="fa-solid fa-paperclip text-success" title="Document joint"></i>{% endif %}
                             <br><small class="text-muted">{{ ann['date'] }} - {{ ann['contenu'][:60] }}...</small>
                         </div>
-                        <div>
+                        <div style="display: flex; gap: 0.4rem;">
+                            <button type="button" class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"
+                                onclick="openEditAnnonce({{ ann['id'] }}, '{{ ann['titre'] | replace("'", "\\'") }}', `{{ ann['contenu'] | replace('`', '\\`') | replace('\\', '\\\\') }}`)">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
                             <form action="{{ url_for('delete_annonce', id=ann['id']) }}" method="POST" onsubmit="return confirm('Supprimer définitivement cette annonce/document (le fichier associé sera effacé) ?');">
                                 <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-trash"></i></button>
                             </form>
@@ -397,5 +401,48 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     });
 });
+
+function openEditAnnonce(id, titre, contenu) {
+    document.getElementById('editAnnonceId').value = id;
+    document.getElementById('editAnnonceTitre').value = titre;
+    document.getElementById('editAnnonceContenu').value = contenu;
+    document.getElementById('editAnnonceForm').action = '/admin/annonce/edit/' + id;
+    document.getElementById('editAnnonceModal').style.display = 'flex';
+    if (window._editMDE) { window._editMDE.value(contenu); }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var editEl = document.getElementById('editAnnonceContenu');
+    if (editEl) {
+        window._editMDE = new EasyMDE({
+            element: editEl,
+            spellChecker: false,
+            autosave: { enabled: false },
+            toolbar: ["bold","italic","heading","|","quote","unordered-list","ordered-list","|","preview"]
+        });
+    }
+});
 </script>
+
+<!-- Edit Annonce Modal -->
+<div id="editAnnonceModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:var(--bg-panel); border:1px solid var(--border-light); border-radius:12px; padding:2rem; width:90%; max-width:700px; max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h3 style="margin:0;"><i class="fa-solid fa-pen text-warning"></i> Éditer l'Annonce</h3>
+            <button onclick="document.getElementById('editAnnonceModal').style.display='none'" class="btn btn-danger" style="padding:0.3rem 0.7rem;">✕</button>
+        </div>
+        <form id="editAnnonceForm" method="POST">
+            <input type="hidden" name="annonce_id" id="editAnnonceId">
+            <div style="margin-bottom:1rem;">
+                <label style="display:block; margin-bottom:0.4rem; font-weight:600;">Titre</label>
+                <input type="text" name="titre" id="editAnnonceTitre" class="form-control" required>
+            </div>
+            <div style="margin-bottom:1.5rem;">
+                <label style="display:block; margin-bottom:0.4rem; font-weight:600;">Contenu (Markdown)</label>
+                <textarea name="contenu" id="editAnnonceContenu" rows="10" class="form-control"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success" style="width:100%;"><i class="fa-solid fa-save"></i> Enregistrer</button>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
