@@ -15,7 +15,7 @@ Ce guide vous explique comment passer de votre environnement local Windows vers 
    git branch -M main
    git push -u origin main
    ```
-WHnKkcAotK9bMDQ2
+
 ## Étape 2 : Configurer la base de données sur Supabase
 1. Créez un projet sur [Supabase](https://supabase.com/).
 2. Allez dans **Project Settings > Database**.
