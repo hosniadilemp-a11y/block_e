@@ -143,12 +143,12 @@ def index():
     annonces = conn.execute("SELECT * FROM annonces ORDER BY date DESC LIMIT 5").fetchall()
     
     timeline_query = """
-    SELECT 'cotisation' as type, date(c.date) as date_str, c.montant, 'Cotisation Apt ' || u.appartement_numero as description 
+    SELECT 'cotisation' as type, CAST(c.date AS DATE) as date_str, c.date as full_date, c.montant, 'Cotisation Apt ' || u.appartement_numero as description 
     FROM cotisations c JOIN users u ON c.user_id = u.id
     UNION ALL
-    SELECT 'depense' as type, date(date) as date_str, montant, description 
+    SELECT 'depense' as type, CAST(date AS DATE) as date_str, date as full_date, montant, description 
     FROM depenses
-    ORDER BY date DESC LIMIT 20
+    ORDER BY full_date DESC LIMIT 20
     """
     timeline = conn.execute(timeline_query).fetchall()
     
