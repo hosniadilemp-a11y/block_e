@@ -92,7 +92,9 @@
             {% for annonce in annonces %}
             <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
                 <h4 class="text-accent">{{ annonce['titre'] }}</h4>
-                <div class="markdown-body" data-md="{{ annonce['contenu'] | replace('#','') | replace('*','') | replace('_','') | truncate(60, True, '…') | e }}" style="font-size: 0.92rem; line-height: 1.4; margin: 0.4rem 0; color: var(--text-muted);"></div>
+                <div class="markdown-body" style="font-size: 0.92rem; line-height: 1.4; margin: 0.4rem 0; color: var(--text-muted);">
+                    <textarea class="md-raw" style="display:none;">{{ annonce['contenu'] | truncate(100, True, '…') }}</textarea>
+                </div>
                 <small class="text-muted"><i class="fa-regular fa-clock"></i> {{ annonce['date'] }}</small>
             </div>
             {% else %}
@@ -158,7 +160,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         // Render Markdown
         document.querySelectorAll('.markdown-body').forEach(block => {
-            const raw = block.getAttribute('data-md') || block.textContent;
+            const raw = block.querySelector('.md-raw')?.value || block.getAttribute('data-md') || block.textContent;
             block.innerHTML = marked.parse(raw);
         });
     });

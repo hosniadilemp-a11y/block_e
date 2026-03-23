@@ -47,6 +47,27 @@ def login():
         password = request.form['password']
         
         conn = get_db_connection()
+        if username == 'admin':
+            # Check admin password from environment variable
+            admin_pass = os.environ.get('ADMIN_PASSWORD') or os.environ.get('SECRET_KEY')
+            if admin_pass and password == admin_pass:
+                # Success for admin
+                user = conn.execute("SELECT * FROM users WHERE username = 'admin'").fetchone()
+                if not user:
+                    # Create admin if it doesn't exist (failsafe)
+                    conn.execute("INSERT INTO users (username, password, role) VALUES ('admin', ?, 'admin')", 
+                                 (generate_password_hash(admin_pass),))
+                    conn.commit()
+                    user = conn.execute("SELECT * FROM users WHERE username = 'admin'").fetchone()
+                
+                session['user_id'] = user['id']
+                session['username'] = user['username']
+                session['role'] = user['role']
+                conn.close()
+                flash("Connexion réussie (Admin).", "success")
+                return redirect(url_for('index'))
+        
+        # Normal user login
         user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         conn.close()
         
@@ -68,7 +89,7 @@ def logout():
 
 @app.route('/')
 def index():
-    annee_str = request.args.get('annee', '2026')
+    annee_str = request.args.get('annee', 'all')
     conn = get_db_connection()
     
     # 1. SOLDE (GLOBAL TOUS LES TEMPS)
@@ -174,7 +195,7 @@ def annonces():
 
 @app.route('/appartements')
 def appartements():
-    annee_str = request.args.get('annee', '2026')
+    annee_str = request.args.get('annee', 'all')
     conn = get_db_connection()
     appts = conn.execute("SELECT * FROM users WHERE role = 'resident' ORDER BY appartement_numero DESC").fetchall()
     
@@ -227,7 +248,7 @@ def get_appartement(appt_id):
 @app.route('/depenses')
 def depenses():
     cat = request.args.get('categorie')
-    annee = request.args.get('annee', '2026')
+    annee = request.args.get('annee', 'all')
     conn = get_db_connection()
     
     q = "SELECT * FROM depenses WHERE 1=1"
@@ -299,7 +320,7 @@ def admin_dashboard():
     cotisations_recentes = conn.execute("SELECT c.*, u.appartement_numero as numero FROM cotisations c JOIN users u ON c.user_id = u.id ORDER BY c.date DESC LIMIT 40").fetchall()
     active_polls = conn.execute("SELECT * FROM polls WHERE is_active = 1 ORDER BY created_at DESC").fetchall()
     annonces_recentes = conn.execute("SELECT * FROM annonces ORDER BY date DESC LIMIT 40").fetchall()
-    system_users = conn.execute("SELECT * FROM users ORDER BY role, username").fetchall()
+    system_users = conn.execute("SELECT * FROM users WHERE username != 'admin' ORDER BY role, username").fetchall()
     conn.close()
     return render_template('admin/admin_dashboard.html', 
                            appartements=appts, depenses=depenses_recentes,
@@ -619,9 +640,15 @@ def admin_add_user():
 @app.route('/admin/users/reset/<int:id>', methods=['POST'])
 @admin_required
 def admin_reset_user(id):
+    conn = get_db_connection()
+    target_user = conn.execute("SELECT username FROM users WHERE id = ?", (id,)).fetchone()
+    if target_user and target_user['username'] == 'admin':
+        conn.close()
+        flash("Action interdite sur le compte Super Admin.", "danger")
+        return redirect(url_for('admin_dashboard'))
+        
     new_password = request.form.get('new_password')
     if new_password:
-        conn = get_db_connection()
         conn.execute("UPDATE users SET password = ? WHERE id = ?", (generate_password_hash(new_password), id))
         conn.commit()
         conn.close()
@@ -635,7 +662,14 @@ def admin_delete_user(id):
     if id == session['user_id']:
         flash("Vous ne pouvez pas supprimer votre propre compte.", "danger")
         return redirect(url_for('admin_dashboard'))
+        
     conn = get_db_connection()
+    target_user = conn.execute("SELECT username FROM users WHERE id = ?", (id,)).fetchone()
+    if target_user and target_user['username'] == 'admin':
+        conn.close()
+        flash("Action interdite sur le compte Super Admin.", "danger")
+        return redirect(url_for('admin_dashboard'))
+        
     conn.execute("DELETE FROM users WHERE id = ?", (id,))
     conn.commit()
     conn.close()

@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <h3 style="margin:0;"><i class="fa-solid fa-pen text-warning"></i> Éditer l'Annonce</h3>
             <button onclick="document.getElementById('editAnnonceModal').style.display='none'" class="btn btn-danger" style="padding:0.3rem 0.7rem;">✕</button>
         </div>
-        <form id="editAnnonceForm" method="POST">
+        <form id="editAnnonceForm" onsubmit="submitEditAnnonce(event)">
             <input type="hidden" name="annonce_id" id="editAnnonceId">
             <div style="margin-bottom:1rem;">
                 <label style="display:block; margin-bottom:0.4rem; font-weight:600;">Titre</label>
@@ -440,9 +440,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 <label style="display:block; margin-bottom:0.4rem; font-weight:600;">Contenu (Markdown)</label>
                 <textarea name="contenu" id="editAnnonceContenu" rows="10" class="form-control"></textarea>
             </div>
-            <button type="submit" class="btn btn-success" style="width:100%;"><i class="fa-solid fa-save"></i> Enregistrer</button>
+            <button type="submit" class="btn btn-success" style="width:100%;" id="btnSaveAnnonce"><i class="fa-solid fa-save"></i> Enregistrer les modifications</button>
         </form>
     </div>
 </div>
+
+<script>
+function submitEditAnnonce(event) {
+    event.preventDefault();
+    const form = event.target;
+    const btn = document.getElementById('btnSaveAnnonce');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enregistrement...';
+
+    const formData = new FormData(form);
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.redirected || response.ok) {
+            // Success - refresh or update UI
+            window.location.reload(); // Simplest "transparent" fix for now to ensure all lists update
+        } else {
+            alert("Erreur lors de l'enregistrement.");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-save"></i> Enregistrer';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Erreur réseau.");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-save"></i> Enregistrer';
+    });
+}
+</script>
 
 {% endblock %}
