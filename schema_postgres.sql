@@ -46,8 +46,8 @@ CREATE TABLE depenses (
     montant DECIMAL(12, 2) NOT NULL,
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     categorie TEXT NOT NULL,
-    payePar TEXT NOT NULL,
-    soldeApres DECIMAL(12, 2) NOT NULL,
+    payePar TEXT,
+    soldeApres DECIMAL(12, 2) NOT NULL DEFAULT 0,
     document TEXT
 );
 
