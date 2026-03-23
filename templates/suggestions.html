@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Suggestions & Réclamations{% endblock %}
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Suggestions List -->
+    <div class="main-col">
+        <h2 style="margin-bottom: 1.5rem;"><i class="fa-regular fa-lightbulb text-warning"></i> Idées et Signalements</h2>
+        
+        {% for sugg in suggestions %}
+        <div class="glass-panel" style="margin-bottom: 1rem; position: relative;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <h4 style="margin-bottom:0.5rem; font-size: 1.1rem;">{{ sugg['titre'] }}</h4>
+                    <p style="font-size:0.95rem; margin-bottom:0.5rem; line-height: 1.5; color: #cbd5e1;">{{ sugg['description'] }}</p>
+                    <small class="text-muted"><i class="fa-regular fa-user"></i> Soumis par Apt {{ sugg['auteur_name'] }} le {{ sugg['date'].split(' ')[0] }}</small>
+                </div>
+                
+                <!-- Status Badge -->
+                {% set sc = 'var(--gray)' %}
+                {% if sugg['statut'] == 'Approuvee' %}{% set sc = 'var(--success)' %}
+                {% elif sugg['statut'] == 'Rejetee' %}{% set sc = 'var(--danger)' %}
+                {% elif sugg['statut'] == 'En cours' %}{% set sc = 'var(--accent)' %}
+                {% else %}{% set sc = 'var(--warning)' %}{% endif %}
+                <span style="border: 1px solid {{ sc }}; color: {{ sc }}; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">
+                    {{ sugg['statut'] }}
+                </span>
+            </div>
+            
+            <div style="margin-top:1.5rem; display:flex; gap:1rem; align-items:center;">
+                <form action="{{ url_for('vote_suggestion', sugg_id=sugg['id'], type_vote='up') }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn" style="background:rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color:var(--success); padding:0.4rem 0.8rem;">
+                        <i class="fa-solid fa-thumbs-up"></i> {{ sugg['upvotes'] }}
+                    </button>
+                </form>
+                <form action="{{ url_for('vote_suggestion', sugg_id=sugg['id'], type_vote='down') }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn" style="background:rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color:var(--danger); padding:0.4rem 0.8rem;">
+                        <i class="fa-solid fa-thumbs-down"></i> {{ sugg['downvotes'] }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="glass-panel text-center">
+            <p class="text-muted">Aucune suggestion ou réclamation pour le moment. Soyez le premier à contribuer !</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Submission Form -->
+    <div class="side-col">
+        <div class="glass-panel" style="position: sticky; top: 100px;">
+            <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-pen-to-square"></i> Soumettre</h3>
+            <form action="{{ url_for('add_suggestion') }}" method="POST">
+                <div class="form-group">
+                    <label class="form-label">Sujet / Titre</label>
+                    <input type="text" name="titre" class="form-control" placeholder="Ex: Rénovation hall, Fuite..." required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description détaillée</label>
+                    <textarea name="description" class="form-control" rows="5" placeholder="Décrivez votre idée ou problème en détail pour que les autres résidents puissent voter..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Envoyer la publication</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Audit Administratif (Secret URL){% endblock %}
+{% block content %}
+<!-- AUDIT LOGS VIEW (SECRET) -->
+<div class="glass-panel" style="margin-top: 2rem;">
+    <h3><i class="fa-solid fa-user-secret text-danger"></i> Historique Sécurisé (Audit)</h3>
+    <p class="text-muted" style="margin-bottom: 1rem;">Traçabilité complète de l'activité du syndicat. Gardez cette page privée.</p>
+    <div style="overflow-x: auto; max-height: 800px; overflow-y: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+            <thead style="background: rgba(0,0,0,0.2); text-align: left; position: sticky; top: 0;">
+                <tr>
+                    <th style="padding: 1rem;">Date & Heure</th>
+                    <th style="padding: 1rem;">Utilisateur (Responsable)</th>
+                    <th style="padding: 1rem;">Type Action</th>
+                    <th style="padding: 1rem;">Détails Enregistrés</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr style="border-bottom: 1px solid var(--border-light);">
+                    <td style="padding: 1rem;" class="text-muted">{{ log['date'] }}</td>
+                    <td style="padding: 1rem; font-weight: bold; color: var(--danger)">{{ log['username'] }}</td>
+                    <td style="padding: 1rem;">
+                        <span style="background: var(--bg-card); padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.85rem; border: 1px solid var(--border-light);">
+                            {{ log['action'] }}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem;">{{ log['details'] }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-muted" style="padding: 1rem; text-align:center;">Aucun enregistrement d'audit système.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

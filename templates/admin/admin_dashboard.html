@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Administrateur{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<style>
+/* EasyMDE theme integration */
+.EasyMDEContainer .CodeMirror {
+    background: var(--bg-card) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 0 0 8px 8px !important;
+    font-size: 1rem !important;
+    min-height: 220px !important;
+}
+.EasyMDEContainer .editor-toolbar {
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border-light) !important;
+    border-bottom: none !important;
+    border-radius: 8px 8px 0 0 !important;
+}
+.EasyMDEContainer .editor-toolbar button {
+    color: var(--text-color) !important;
+}
+.EasyMDEContainer .editor-toolbar button:hover,
+.EasyMDEContainer .editor-toolbar button.active {
+    background: var(--accent) !important;
+    color: #fff !important;
+    border-radius: 4px !important;
+}
+.EasyMDEContainer .editor-toolbar i.separator { border-color: var(--border-light) !important; }
+.EasyMDEContainer .editor-preview { background: var(--bg-card) !important; color: var(--text-color) !important; border: 1px solid var(--border-light) !important; }
+.editor-preview h1, .editor-preview h2, .editor-preview h3 { color: var(--accent); }
+.editor-preview strong { color: var(--success); }
+.editor-preview em { color: var(--warning); font-style:italic; }
+.editor-preview blockquote { border-left: 4px solid var(--accent); padding-left: 1rem; color: var(--text-muted); }
+.editor-preview ul, .editor-preview ol { padding-left: 1.5rem; }
+/* Make the annonce panel larger */
+.annonce-editor-panel { border-top: 5px solid var(--warning) !important; }
+</style>
+{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h2><i class="fa-solid fa-screwdriver-wrench text-danger"></i> Espace Administrateur</h2>
+    <div style="display: flex; gap: 1rem;">
+        <a href="{{ url_for('export_depenses') }}" class="btn btn-danger"><i class="fa-solid fa-file-csv"></i> Export Dépenses</a>
+        <a href="{{ url_for('export_cotisations') }}" class="btn btn-success"><i class="fa-solid fa-file-csv"></i> Export Cotisations</a>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="main-col">
+        <!-- Diffuser Info (Moved from side-col to be wider) -->
+        <div class="glass-panel annonce-editor-panel" style="margin-bottom: 2rem;">
+            <h3><i class="fa-solid fa-bullhorn text-warning"></i> Diffuser une Annonce</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Utilisez l'éditeur ci-dessous pour rédiger une annonce enrichie. Elle sera visible sur le tableau de bord des résidents.</p>
+            <form action="{{ url_for('add_annonce') }}" method="POST" style="display: flex; flex-direction: column; gap: 1rem;" id="annonce-form">
+                <input type="text" name="titre" class="form-control" placeholder="Titre de l'annonce (ex: Réunion de copropriété)" required>
+                <textarea name="contenu" id="annonce-editor" required></textarea>
+                <button type="submit" class="btn btn-warning" style="width:100%; padding: 0.9rem; font-size: 1rem;"><i class="fa-solid fa-paper-plane"></i> Publier l'Annonce</button>
+            </form>
+        </div>
+        
+        <!-- Saisie Cotisation -->
+        <div class="glass-panel" style="margin-bottom: 2rem; border-top: 4px solid var(--success);">
+            <h3><i class="fa-solid fa-hand-holding-dollar text-success"></i> Saisir une Cotisation</h3>
+            <form action="{{ url_for('add_cotisation') }}" method="POST" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+                <div>
+                    <label>N° Appartement</label>
+                    <select name="numero" class="form-control" required>
+                        {% for a in appartements %}
+                        <option value="{{ a['appartement_numero'] }}">Apt {{ a['appartement_numero'] }} - {{ a['nom_complet'] or a['username'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Montant (DA)</label>
+                    <input type="number" name="montant" class="form-control" placeholder="Ex: 5000" required>
+                </div>
+                <div>
+                    <label>Année fiscale</label>
+                    <select name="annee" class="form-control" required>
+                        <option value="2027">2027</option>
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label>Date Exacte</label>
+                    <input type="date" name="date" class="form-control" required>
+                </div>
+                <div style="grid-column: 1 / -1; text-align: right;">
+                    <button type="submit" class="btn btn-success">Encaisser</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Saisie Dépense -->
+        <div class="glass-panel" style="margin-bottom: 2rem; border-top: 4px solid var(--danger);">
+            <h3><i class="fa-solid fa-money-bill-transfer text-danger"></i> Saisir une Dépense</h3>
+            <form action="{{ url_for('add_depense') }}" method="POST" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="grid-column: 1 / -1;">
+                    <label>Description (Objet de la dépense)</label>
+                    <input type="text" name="description" class="form-control" required>
+                </div>
+                <div>
+                    <label>Montant (DA)</label>
+                    <input type="number" step="0.01" name="montant" class="form-control" required>
+                </div>
+                <div>
+                    <label>Catégorie</label>
+                    <select name="categorie" class="form-control" required>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Nettoyage">Nettoyage</option>
+                        <option value="Électricité">Électricité</option>
+                        <option value="Sécurité">Sécurité</option>
+                        <option value="Réparation">Réparation</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Payé par (Optionnel)</label>
+                    <input type="text" name="payePar" class="form-control" placeholder="Nom du responsable">
+                </div>
+                <div>
+                    <label>Date Exacte</label>
+                    <input type="date" name="date" class="form-control" required>
+                </div>
+                <div style="grid-column: 1 / -1; text-align: right;">
+                    <button type="submit" class="btn btn-danger">Enregistrer la dépense</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Gestion & Edition / Suppression Rapide -->
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;"> <!-- Changed from 1fr 1fr to 1fr vertical stack -->
+            
+            <!-- Liste Cotisations Récentes -->
+            <div class="glass-panel" style="max-height: 400px; overflow-y: auto;">
+                <h4 class="text-success"><i class="fa-solid fa-list-check"></i> Cotisations (Dernières saisies)</h4>
+                <ul style="list-style: none; padding: 0;">
+                    {% for c in cotisations %}
+                    <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-light);">
+                        <div>
+                            <span style="font-weight: bold;">Apt {{ c['numero'] }}</span> - {{ "{:,.0f}".format(c['montant']).replace(',', ' ') }} DA <br>
+                            <small class="text-muted">{{ c['date'].split(' ')[0] }} (An. {{ c['annee'] }})</small>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <!-- Edit Button -->
+                            <button class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="openEditCotisation({{ c['id'] }}, {{ c['montant'] }}, {{ c['annee'] }}, '{{ c['date'].split(' ')[0] }}')">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <!-- Delete Button -->
+                            <form action="{{ url_for('delete_cotisation', id=c['id']) }}" method="POST" onsubmit="return confirm('Supprimer définitivement cette cotisation ?');">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="text-muted">Aucune cotisation récente.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Liste Dépenses Récentes -->
+            <div class="glass-panel" style="max-height: 400px; overflow-y: auto;">
+                <h4 class="text-danger"><i class="fa-solid fa-list-check"></i> Dépenses (Dernières saisies)</h4>
+                <ul style="list-style: none; padding: 0;">
+                    {% for d in depenses %}
+                    <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-light);">
+                        <div style="width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <span style="font-weight: bold;">{{ d['categorie'] }}</span> - {{ "{:,.0f}".format(d['montant']).replace(',', ' ') }} DA <br>
+                            <small class="text-muted" title="{{ d['description'] }}">{{ d['date'] }} - {{ d['description'] }}</small>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <!-- Edit Button -->
+                            <button class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="openEditDepense({{ d['id'] }}, '{{ d['description'] | replace('\'', '\\\'') | replace('\"', '\\\"') }}', {{ d['montant'] }}, '{{ d['categorie'] }}', '{{ d['date'].split(' ')[0] }}')">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <!-- Delete Button -->
+                            <form action="{{ url_for('delete_depense', id=d['id']) }}" method="POST" onsubmit="return confirm('Supprimer définitivement cette dépense ?');">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="text-muted">Aucune dépense récente.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Liste Annonces & Documents -->
+            <div class="glass-panel" style="max-height: 400px; overflow-y: auto; grid-column: 1 / -1; border-top: 4px solid var(--warning);">
+                <h4 class="text-warning"><i class="fa-solid fa-bullhorn"></i> Annonces & Documents Publiés</h4>
+                <ul style="list-style: none; padding: 0;">
+                    {% for ann in annonces %}
+                    <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-light);">
+                        <div style="width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <span style="font-weight: bold; color: var(--accent);">{{ ann['titre'] }}</span>
+                            {% if ann['chemin_document'] %}<i class="fa-solid fa-paperclip text-success" title="Document joint"></i>{% endif %}
+                            <br><small class="text-muted">{{ ann['date'] }} - {{ ann['contenu'][:60] }}...</small>
+                        </div>
+                        <div>
+                            <form action="{{ url_for('delete_annonce', id=ann['id']) }}" method="POST" onsubmit="return confirm('Supprimer définitivement cette annonce/document (le fichier associé sera effacé) ?');">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="text-muted">Aucune publication récente.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="side-col">
+        <!-- Archiver un document -->
+        <div class="glass-panel" style="margin-bottom: 2rem;">
+            <h3><i class="fa-solid fa-file-pdf text-accent"></i> Ajouter un Document</h3>
+            <form action="{{ url_for('upload_document') }}" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="text" name="titre" class="form-control" placeholder="Titre complet du document" required>
+                <select name="categorie" class="form-control">
+                    <option value="Facture">Facture Globale</option>
+                    <option value="Devis">Devis Travaux</option>
+                    <option value="Rapport">Compte Rendu Assemblée</option>
+                    <option value="Autre">Autre</option>
+                </select>
+                <select name="annee" class="form-control">
+                    <option value="2027">2027</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2025">2025</option>
+                </select>
+                <input type="file" name="document" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
+                <button type="submit" class="btn btn-accent"><i class="fa-solid fa-upload"></i> Uploader et Annoncer</button>
+            </form>
+        </div>
+        
+        <!-- Créer un sondage -->
+        <div class="glass-panel" style="margin-bottom: 2rem;">
+            <h3><i class="fa-solid fa-square-poll-horizontal text-accent"></i> Créer Sondage</h3>
+            <form action="{{ url_for('add_poll') }}" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="text" name="question" class="form-control" placeholder="Question du sondage" required>
+                <input type="text" name="options" class="form-control" placeholder="Option 1" required>
+                <input type="text" name="options" class="form-control" placeholder="Option 2" required>
+                <input type="text" name="options" class="form-control" placeholder="Option 3 (facultatif)">
+                <button type="submit" class="btn btn-accent">Lancer le sondage</button>
+            </form>
+        </div>
+        
+        <!-- Gérer Sondages Actifs -->
+        <div class="glass-panel" style="margin-bottom: 2rem;">
+            <h3><i class="fa-solid fa-list-check text-warning"></i> Sondages Actifs</h3>
+            {% for poll in active_polls %}
+            <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
+                <strong>{{ poll['question'] }}</strong>
+                <form action="{{ url_for('close_poll', id=poll['id']) }}" method="POST" style="margin-top: 0.5rem;" onsubmit="return confirm('Clôturer ce sondage et publier les résultats d\'audience ?');">
+                    <button type="submit" class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;"><i class="fa-solid fa-lock"></i> Clôturer & Publier</button>
+                </form>
+            </div>
+            {% else %}
+            <p class="text-muted" style="font-size: 0.9rem;">Aucun sondage actif.</p>
+            {% endfor %}
+        </div>
+
+        <!-- Gestion Utilisateurs -->
+        <div class="glass-panel" style="margin-bottom: 2rem;">
+            <h3><i class="fa-solid fa-users-gear text-primary"></i> Gestion Accès</h3>
+            
+            <form action="{{ url_for('admin_add_user') }}" method="POST" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                <input type="text" name="username" class="form-control" placeholder="Nom d'utilisateur" required>
+                <input type="password" name="password" class="form-control" placeholder="Mot de passe" required>
+                <select name="role" class="form-control">
+                    <option value="resident">Résident</option>
+                    <option value="admin">Administrateur</option>
+                </select>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Créer Utilisateur</button>
+            </form>
+
+            <h4 class="text-muted" style="margin-bottom: 0.8rem; font-size: 0.9rem;">Comptes existants :</h4>
+            <div style="max-height: 250px; overflow-y: auto;">
+                {% for u in system_users %}
+                <div style="padding: 0.8rem 0; border-bottom: 1px solid var(--border-light);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong><i class="fa-solid {{ 'fa-shield text-primary' if u['role'] == 'admin' else 'fa-user text-muted' }}"></i> {{ u['username'] }}</strong>
+                        {% if u['id'] != session['user_id'] %}
+                        <form action="{{ url_for('admin_delete_user', id=u['id']) }}" method="POST" style="margin:0;" onsubmit="return confirm('Supprimer définitivement ce compte ?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    
+                    <form action="{{ url_for('admin_reset_user', id=u['id']) }}" method="POST" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                        <input type="password" name="new_password" class="form-control" placeholder="Nouveau pswd" style="padding: 0.3rem; font-size: 0.8rem;" required>
+                        <button type="submit" class="btn btn-warning" style="padding: 0.3rem; font-size: 0.8rem;"><i class="fa-solid fa-key"></i></button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals for Editing -->
+<script>
+    function openEditCotisation(id, montant, annee, date) {
+        document.getElementById('genericModalContent').innerHTML = `
+            <button class="modal-close" onclick="document.getElementById('genericModal').style.display='none'">&times;</button>
+            <h3 class="text-success" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-pen"></i> Éditer la Cotisation</h3>
+            <form action="/admin/cotisation/edit/${id}" method="POST" style="display: flex; flex-direction: column; gap: 1.2rem;">
+                <div>
+                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Nouveau Montant (DA)</label>
+                    <input type="number" name="montant" value="${montant}" class="form-control" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Date Exacte</label>
+                    <input type="date" name="date" value="${date}" class="form-control" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Année</label>
+                    <select name="annee" class="form-control" required style="width: 100%;">
+                        <option value="2027" ${annee == 2027 ? 'selected':''}>2027</option>
+                        <option value="2026" ${annee == 2026 ? 'selected':''}>2026</option>
+                        <option value="2025" ${annee == 2025 ? 'selected':''}>2025</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success" style="padding: 1rem; font-size: 1.1rem; width: 100%;">Mettre à jour</button>
+            </form>
+        `;
+        document.getElementById('genericModal').style.display = 'flex';
+    }
+
+    function openEditDepense(id, desc, montant, cat, date) {
+        let catOptions = ['Maintenance', 'Nettoyage', 'Électricité', 'Sécurité', 'Réparation', 'Autre'].map(
+            c => `<option value="${c}" ${c === cat ? 'selected':''}>${c}</option>`
+        ).join('');
+        
+        document.getElementById('genericModalContent').innerHTML = `
+            <button class="modal-close" onclick="document.getElementById('genericModal').style.display='none'">&times;</button>
+            <h3 class="text-danger" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-pen"></i> Éditer la Dépense</h3>
+            <form action="/admin/depense/edit/${id}" method="POST" style="display: flex; flex-direction: column; gap: 1.2rem;">
+                <div>
+                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Description</label>
+                    <input type="text" name="description" value="${desc.replace(/\"/g, '&quot;')}" class="form-control" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Montant (DA)</label>
+                    <input type="number" step="0.01" name="montant" value="${montant}" class="form-control" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Date Exacte</label>
+                    <input type="date" name="date" value="${date}" class="form-control" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Catégorie</label>
+                    <select name="categorie" class="form-control" required style="width: 100%;">
+                        ${catOptions}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-danger" style="padding: 1rem; font-size: 1.1rem; width: 100%;">Mettre à jour</button>
+            </form>
+        `;
+        document.getElementById('genericModal').style.display = 'flex';
+    }
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var editorEl = document.getElementById('annonce-editor');
+    if (!editorEl) return;
+    var easyMDE = new EasyMDE({
+        element: editorEl,
+        placeholder: "Rédigez votre annonce ici...\n\nExemples:\n# Titre principal\n## Sous-titre\n**Texte en gras** ou _italique_\n- Élément de liste\n> Citation importante",
+        spellChecker: false,
+        autosave: { enabled: false },
+        toolbar: [
+            { name: "heading-1", action: EasyMDE.toggleHeading1, className: "fa fa-header", title: "Titre H1" },
+            { name: "heading-2", action: EasyMDE.toggleHeading2, className: "fa fa-text-height", title: "Titre H2" },
+            "|",
+            { name: "bold",       action: EasyMDE.toggleBold,           className: "fa fa-bold",         title: "Gras" },
+            { name: "italic",     action: EasyMDE.toggleItalic,         className: "fa fa-italic",       title: "Italique" },
+            { name: "strikethrough", action: EasyMDE.toggleStrikethrough, className: "fa fa-strikethrough", title: "Barré" },
+            "|",
+            { name: "unordered-list", action: EasyMDE.toggleUnorderedList, className: "fa fa-list-ul",  title: "Liste à puces" },
+            { name: "ordered-list",   action: EasyMDE.toggleOrderedList,   className: "fa fa-list-ol",  title: "Liste numérotée" },
+            "|",
+            { name: "quote",      action: EasyMDE.toggleBlockquote, className: "fa fa-quote-left", title: "Citation" },
+            { name: "horizontal-rule", action: EasyMDE.drawHorizontalRule, className: "fa fa-minus", title: "Séparateur" },
+            "|",
+            { name: "preview",      action: EasyMDE.togglePreview,     className: "fa fa-eye",     title: "Aperçu rendu" },
+            { name: "side-by-side", action: EasyMDE.toggleSideBySide,  className: "fa fa-columns", title: "Vue côte-à-côte" },
+            "fullscreen"
+        ]
+    });
+});
+</script>
+{% endblock %}

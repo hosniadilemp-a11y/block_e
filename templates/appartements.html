@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Résidents & Bâtiment{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="text-align: center; margin-bottom: 2rem; border-top: 4px solid var(--primary);">
+    <h2><i class="fa-solid fa-city text-primary"></i> Le Bâtiment - Bloc E</h2>
+    <p class="text-muted">Vue d'ensemble architecturale simplifiée de l'état des cotisations.</p>
+    
+    <form method="GET" style="display:inline-block; margin: 1.5rem 0; padding: 0.8rem 1.5rem; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-main);">
+        <label style="font-weight: 500; margin-right: 0.5rem;"><i class="fa-regular fa-calendar text-accent"></i> Année :</label>
+        <select name="annee" class="form-control" style="width: auto; display: inline-block; font-weight:bold;" onchange="this.form.submit()">
+            <option value="all" {% if current_annee == 'all' %}selected{% endif %}>Toutes les années</option>
+            <option value="2027" {% if current_annee == '2027' %}selected{% endif %}>2027</option>
+            <option value="2026" {% if current_annee == '2026' %}selected{% endif %}>2026</option>
+            <option value="2025" {% if current_annee == '2025' %}selected{% endif %}>2025</option>
+        </select>
+    </form>
+
+    <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.5rem; flex-wrap: wrap; font-size: 0.9rem;">
+        <span><i class="fa-solid fa-circle" style="color: var(--success); font-size: 0.8rem;"></i> En règle</span>
+        <span><i class="fa-solid fa-circle" style="color: var(--warning); font-size: 0.8rem;"></i> Partiel</span>
+        <span><i class="fa-solid fa-circle" style="color: var(--text-muted); font-size: 0.8rem;"></i> À jour (0 DA)</span>
+    </div>
+</div>
+
+<style>
+.building-container {
+    max-width: 800px;
+    margin: 0 auto 3rem;
+    perspective: 1000px;
+}
+
+.building-facade {
+    background: var(--bg-card);
+    border: 2px solid var(--border-light);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+.building-roof-simple {
+    height: 40px;
+    background: var(--bg-main);
+    border: 2px solid var(--border-light);
+    border-bottom: none;
+    width: 80%;
+    margin: 0 auto;
+    border-radius: 40px 40px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+}
+
+.floor {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.floor:last-child {
+    border-bottom: none;
+}
+
+/* Custom grid for the top floor with 2 apartments */
+.floor-top {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 66%;
+    margin: 0 auto;
+}
+
+.apt-unit {
+    background: var(--bg-main);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+    position: relative;
+    overflow: hidden;
+}
+
+.apt-unit:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.apt-unit::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--text-muted);
+}
+
+.apt-unit.status-paid::before { background: var(--success); }
+.apt-unit.status-partial::before { background: var(--warning); }
+.apt-unit.status-none::before { background: var(--text-muted); opacity: 0.3; }
+
+.apt-number {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
+    color: var(--text-color);
+}
+
+.apt-resident {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.apt-phone {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.apt-amount {
+    margin-top: 0.8rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--accent);
+}
+
+.status-paid .apt-amount { color: var(--success); }
+.status-partial .apt-amount { color: var(--warning); }
+
+/* Decorative ground line */
+.building-ground-line {
+    height: 10px;
+    background: var(--border-light);
+    border-radius: 5px;
+    width: 110%;
+    margin-left: -5%;
+    margin-top: 2rem;
+}
+
+[data-theme='light'] .apt-unit {
+    background: #fff;
+}
+</style>
+
+<div class="building-container">
+    <div class="building-roof-simple">BLOC E</div>
+    <div class="building-facade">
+        {% set all_apts = appartements %}
+        {% set n_total = all_apts | length %}
+
+        {# To ensure we have 3 per floor and 2 on top, we'll slice manually #}
+        {# For 20 apartments (81-100):
+           Top floor (index 0,1): 100, 99
+           Floors below: 98-96, 95-93, 92-90, 89-87, 86-84, 83-81 #}
+        
+        <div class="floor floor-top">
+            {% for i in range(2) %}
+                {% if i < n_total %}
+                    {% set a = all_apts[i] %}
+                    {% set s_class = 'status-none' %}
+                    {% if a.total_paye >= 10000 %}{% set s_class = 'status-paid' %}
+                    {% elif a.total_paye > 0 %}{% set s_class = 'status-partial' %}{% endif %}
+                    <div class="apt-unit {{ s_class }}" onclick="openModal({{ a.id }})">
+                        <div class="apt-number">{{ a.numero }}</div>
+                        <div class="apt-resident">{{ a.resident }}</div>
+                        <div class="apt-phone">{{ a.telephone if a.telephone else '---' }}</div>
+                        <div class="apt-amount">{{ "{:,.0f}".format(a.total_paye).replace(',', ' ') }} DA</div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if n_total > 2 %}
+            {% for i in range(2, n_total, 3) %}
+                <div class="floor">
+                    {% for j in range(i, i + 3) %}
+                        {% if j < n_total %}
+                            {% set a = all_apts[j] %}
+                            {% set s_class = 'status-none' %}
+                            {% if a.total_paye >= 10000 %}{% set s_class = 'status-paid' %}
+                            {% elif a.total_paye > 0 %}{% set s_class = 'status-partial' %}{% endif %}
+                            <div class="apt-unit {{ s_class }}" onclick="openModal({{ a.id }})">
+                                <div class="apt-number">{{ a.numero }}</div>
+                                <div class="apt-resident">{{ a.resident }}</div>
+                                <div class="apt-phone">{{ a.telephone if a.telephone else '---' }}</div>
+                                <div class="apt-amount">{{ "{:,.0f}".format(a.total_paye).replace(',', ' ') }} DA</div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="building-ground-line"></div>
+    </div>
+</div>
+
+<div class="glass-panel" style="text-align: center; max-width: 800px; margin: 0 auto 3rem; background: var(--bg-card);">
+    <h4 class="text-muted" style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">Collecte Totale ({{ current_annee }})</h4>
+    <h2 class="text-success" style="font-size: 2.5rem; margin: 0;">{{ "{:,.0f}".format(total_amount).replace(',', ' ') }} DA</h2>
+</div>
+
+<script>
+function openModal(id) {
+    fetch(`/api/appartement/${id}`)
+        .then(r => r.json())
+        .then(data => {
+            let fmt = new Intl.NumberFormat('fr-DZ');
+            let hist = data.historique.length === 0
+                ? '<p class="text-muted" style="text-align:center;padding:2rem;">Aucun versement enregistré.</p>'
+                : '<ul style="list-style:none;padding:0;">' + data.historique.map(i =>
+                    `<li style="display:flex;justify-content:space-between;align-items:center;padding:0.9rem;border-bottom:1px solid var(--border-light);">
+                        <span class="text-muted"><i class="fa-regular fa-calendar"></i> ${i.date.split(' ')[0]} <small>(${i.annee})</small></span>
+                        <span class="text-success" style="font-weight:700;">+ ${fmt.format(i.montant)} DA</span>
+                    </li>`).join('') + '</ul>';
+
+            document.getElementById('genericModalContent').innerHTML = `
+                <button class="modal-close" onclick="document.getElementById('genericModal').style.display='none'">&times;</button>
+                <h2 class="text-accent" style="border-bottom: 2px solid var(--border-light); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    Appartement ${data.numero}
+                </h2>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; text-align: left;">
+                    <div>
+                        <p class="text-muted" style="margin:0; font-size:0.8rem;">Locataire</p>
+                        <p style="margin:0; font-weight:700;">${data.resident}</p>
+                    </div>
+                    <div>
+                        <p class="text-muted" style="margin:0; font-size:0.8rem;">Statut</p>
+                        <p style="margin:0; font-weight:700;">${data.statut}</p>
+                    </div>
+                </div>
+                <h4 style="text-align: left; margin-bottom: 1rem;"><i class="fa-solid fa-clock-rotate-left"></i> Versements</h4>
+                <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border-light); border-radius:8px;">${hist}</div>`;
+            document.getElementById('genericModal').style.display = 'flex';
+        });
+}
+</script>
+{% endblock %}

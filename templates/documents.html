@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Documents{% endblock %}
+{% block content %}
+<div class="glass-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2><i class="fa-regular fa-folder-open text-accent"></i> Bibliothèque de Documents</h2>
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date d'ajout</th>
+                    <th>Catégorie</th>
+                    <th>Année fiscale</th>
+                    <th>Titre du document</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td class="text-muted" style="font-size: 0.9rem;">{{ doc['date_upload'].split(' ')[0] }}</td>
+                    <td><span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ doc['categorie'] }}</span></td>
+                    <td>{{ doc['annee'] }}</td>
+                    <td style="font-weight: 500;">{{ doc['titre'] }}</td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('static', filename=doc['chemin']) }}" target="_blank" class="btn btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">
+                            <i class="fa-solid fa-eye"></i> Aperçu
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Aucun document n'a été uploadé.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Mon Profil{% endblock %}
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto; text-align: center; margin-bottom: 2rem;">
+    <h2><i class="fa-solid fa-user-shield text-accent"></i> Paramètres de Compte</h2>
+    <p class="text-muted">Vous pouvez modifier votre nom d'utilisateur et votre mot de passe pour des raisons de sécurité.</p>
+</div>
+
+<div class="glass-panel" style="max-width: 600px; margin: 0 auto; padding: 2rem;">
+    <form action="{{ url_for('profile') }}" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div>
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Nouveau Nom d'Utilisateur de Connexion</label>
+            <input type="text" name="new_username" class="form-control" placeholder="Login actuel: {{ user['username'] }}">
+        </div>
+        
+        <div>
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Nom Complet (Résident)</label>
+            <input type="text" name="nom_complet" class="form-control" placeholder="Entrez votre nom et prénom ou de famille" value="{{ user['nom_complet'] or '' }}">
+        </div>
+
+        <div>
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Numéro de Téléphone</label>
+            <input type="tel" name="telephone" class="form-control" placeholder="05XX XX XX XX" value="{{ user['telephone'] or '' }}">
+        </div>
+        
+        <div style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Changer de Mot de Passe <small class="text-muted">(Laissez vide pour conserver)</small></label>
+            <input type="password" name="new_password" class="form-control" placeholder="Nouveau mot de passe secret" style="margin-bottom: 1rem;">
+            <input type="password" name="new_password_confirm" class="form-control" placeholder="Confirmez le nouveau mot de passe">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="padding: 1rem;"><i class="fa-solid fa-floppy-disk"></i> Enregistrer les modifications</button>
+    </form>
+</div>
+{% endblock %}
