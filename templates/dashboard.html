@@ -21,32 +21,32 @@
     </select>
 </form>
 
-<!-- KPI Cards Grid (Premium Styling) -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+<!-- KPI Cards Grid (Responsive Flex) -->
+<div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; align-items: stretch;">
     <!-- Solde -->
-    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(16,185,129,0.1)); border: 1px solid var(--border-light); border-left: 4px solid var(--accent); padding: 1.2rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
-        <h4 class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; margin: 0; white-space: nowrap;">Solde Actuel (Global)</h4>
-        <h2 style="font-size: 1.8rem; margin: 0; font-weight: 800; color: var(--text-color); white-space: nowrap;">{{ "{:,.0f}".format(solde).replace(',', ' ') }} DA</h2>
+    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(16,185,129,0.1)); border-left: 4px solid var(--accent); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; box-shadow: 0 10px 20px rgba(0,0,0,0.15); flex: 1 1 250px;">
+        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">Solde Actuel</h4>
+        <h2 style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">{{ "{:,.0f}".format(solde).replace(',', ' ') }} DA</h2>
     </div>
     <!-- Total Collecté -->
-    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), transparent); border: 1px solid var(--border-light); border-left: 4px solid var(--success); padding: 1.2rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-        <h4 class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; margin: 0; white-space: nowrap;">Total Collecté ({{ current_annee }})</h4>
-        <h2 class="text-success" style="font-size: 1.8rem; margin: 0; font-weight: 800; white-space: nowrap;">+ {{ "{:,.0f}".format(total_cotisations).replace(',', ' ') }} DA</h2>
+    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), transparent); border-left: 4px solid var(--success); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 250px;">
+        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">Collecté ({{ current_annee }})</h4>
+        <h2 class="text-success" style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">+ {{ "{:,.0f}".format(total_cotisations).replace(',', ' ') }} DA</h2>
     </div>
     <!-- Total Dépensé -->
-    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(239,68,68,0.1), transparent); border: 1px solid var(--border-light); border-left: 4px solid var(--danger); padding: 1.2rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-        <h4 class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; margin: 0; white-space: nowrap;">Total Dépensé ({{ current_annee }})</h4>
-        <h2 class="text-danger" style="font-size: 1.8rem; margin: 0; font-weight: 800; white-space: nowrap;">- {{ "{:,.0f}".format(total_depenses).replace(',', ' ') }} DA</h2>
+    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(239,68,68,0.1), transparent); border-left: 4px solid var(--danger); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 250px;">
+        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">Dépensé ({{ current_annee }})</h4>
+        <h2 class="text-danger" style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">- {{ "{:,.0f}".format(total_depenses).replace(',', ' ') }} DA</h2>
     </div>
     <!-- Résidents à jour -->
-    <div class="glass-panel" style="border-left: 4px solid var(--success); padding: 1.2rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-        <h4 class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; margin: 0; white-space: nowrap;">À jour</h4>
-        <h2 class="text-success" style="font-size: 1.8rem; margin: 0; font-weight: 800;">{{ nb_a_jour }}</h2>
+    <div class="glass-panel" style="border-left: 4px solid var(--success); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 150px;">
+        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">À jour</h4>
+        <h2 class="text-success" style="font-size: 1.6rem; margin: 0; font-weight: 800;">{{ nb_a_jour }}</h2>
     </div>
     <!-- Résidents en retard -->
-    <div class="glass-panel" style="border-left: 4px solid var(--danger); padding: 1.2rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-        <h4 class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; margin: 0; white-space: nowrap;">En retard</h4>
-        <h2 class="text-danger" style="font-size: 1.8rem; margin: 0; font-weight: 800;">{{ nb_en_retard }}</h2>
+    <div class="glass-panel" style="border-left: 4px solid var(--danger); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 150px;">
+        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">Retard</h4>
+        <h2 class="text-danger" style="font-size: 1.6rem; margin: 0; font-weight: 800;">{{ nb_en_retard }}</h2>
     </div>
 </div>
 
@@ -87,17 +87,17 @@
     <!-- Sidebar: Sondages & Annonces -->
     <div class="side-col">
         <!-- 📢 Announcements Panel -->
-        <div class="glass-panel" style="background: #1e1e2d; border: 1px solid #3a3a4c; box-shadow: 0 15px 35px rgba(0,0,0,0.3); padding: 1.5rem; margin-bottom: 1.5rem;">
-            <h3 style="color: #fff; margin-bottom: 1.5rem; border-bottom: 1px solid #3a3a4c; padding-bottom: 0.8rem;"><i class="fa-solid fa-bullhorn text-warning"></i> Annonces récentes</h3>
+        <div class="glass-panel" style="box-shadow: 0 15px 35px rgba(0,0,0,0.2); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.8rem;"><i class="fa-solid fa-bullhorn text-warning"></i> Annonces récentes</h3>
             
             <div style="max-height: 600px; overflow-y: auto; padding-right: 0.5rem;">
                 {% for annonce in annonces %}
-                <div style="margin-bottom: 1.5rem; padding: 1rem; background: #2b2b3b; border-radius: 8px; border-left: 3px solid var(--accent);">
-                    <h4 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 1.1rem;">{{ annonce['titre'] }}</h4>
-                    <div class="markdown-body" style="font-size: 0.92rem; line-height: 1.4; margin: 0.4rem 0; color: #ddd;">
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-main); border-radius: 8px; border-left: 3px solid var(--accent); border: 1px solid var(--border-light); border-left-width: 4px;">
+                    <h4 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 1.05rem;">{{ annonce['titre'] }}</h4>
+                    <div class="markdown-body" style="font-size: 0.9rem; line-height: 1.4; margin: 0.4rem 0;">
                         <textarea class="md-raw" style="display:none;">{{ annonce['contenu'] | truncate(100, True, '…') }}</textarea>
                     </div>
-                    <small style="color: #888; font-size: 0.8rem;"><i class="fa-regular fa-clock"></i> {{ annonce['date'] }}</small>
+                    <small style="color: var(--text-muted); font-size: 0.75rem;"><i class="fa-regular fa-clock"></i> {{ annonce['date'] }}</small>
                 </div>
                 {% else %}
                 <p class="text-muted">Aucune annonce pour le moment.</p>
