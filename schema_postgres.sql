@@ -104,3 +104,17 @@ CREATE TABLE logs (
     details TEXT,
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_cotisations_user_id ON cotisations(user_id);
+CREATE INDEX IF NOT EXISTS idx_cotisations_annee    ON cotisations(annee);
+CREATE INDEX IF NOT EXISTS idx_depenses_date ON depenses(date);
+CREATE INDEX IF NOT EXISTS idx_annonces_date ON annonces(date DESC);
+CREATE INDEX IF NOT EXISTS idx_logs_date    ON logs(date DESC);
+CREATE INDEX IF NOT EXISTS idx_logs_user_id ON logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_votes_user_id ON votes(user_id);
+CREATE INDEX IF NOT EXISTS idx_votes_poll_id ON votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_suggestions_statut ON suggestions(statut);
+CREATE INDEX IF NOT EXISTS idx_poll_options_poll_id ON poll_options(poll_id);
+CREATE INDEX IF NOT EXISTS idx_sv_suggestion_id ON suggestions_votes(suggestion_id);
+CREATE INDEX IF NOT EXISTS idx_sv_user_id        ON suggestions_votes(user_id);
