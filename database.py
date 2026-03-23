@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,6 +11,35 @@ class UnifiedCursor:
     def __init__(self, cursor, is_postgres):
         self.cursor = cursor
         self.is_postgres = is_postgres
+        self._last_id = None
+
+    def execute(self, query, params=None):
+        if self.is_postgres:
+            # 1. Translate strftime
+            query = re.sub(r"strftime\(['\"]%Y['\"],\s*([^)]+)\)", r"TO_CHAR(\1, 'YYYY')", query, flags=re.IGNORECASE)
+            query = re.sub(r"strftime\(['\"]%m['\"],\s*([^)]+)\)", r"TO_CHAR(\1, 'MM')", query, flags=re.IGNORECASE)
+            
+            # 2. Handle Insert & lastrowid
+            is_insert = query.strip().upper().startswith('INSERT')
+            if is_insert and 'RETURNING' not in query.upper():
+                query += " RETURNING id"
+
+            # 3. Escape placeholders
+            query = query.replace('?', '%s')
+            query = query.replace('%', '%%').replace('%%s', '%s')
+            
+            self.cursor.execute(query, params or ())
+            
+            if is_insert:
+                try:
+                    res = self.cursor.fetchone()
+                    if res: self._last_id = res[0]
+                except:
+                    pass
+            return self
+        else:
+            self.cursor.execute(query, params or ())
+            return self
 
     def fetchone(self):
         return self.cursor.fetchone()
@@ -23,10 +53,14 @@ class UnifiedCursor:
     @property
     def lastrowid(self):
         if self.is_postgres:
-            # PostgreSQL doesn't have lastrowid on cursor the same way if multiple inserts happen
-            # But for simple cases we might need to handle it via RETURNING
-            return None 
-        return self.cursor.lastrowid
+            return self._last_id
+        return getattr(self.cursor, 'lastrowid', None)
+
+    def __getitem__(self, index):
+        return self.cursor[index]
+
+    def close(self):
+        self.cursor.close()
 
 class UnifiedConnection:
     def __init__(self, conn, is_postgres):
@@ -34,14 +68,8 @@ class UnifiedConnection:
         self.is_postgres = is_postgres
 
     def execute(self, query, params=None):
-        if self.is_postgres:
-            query = query.replace('?', '%s')
-            cur = self.conn.cursor()
-            cur.execute(query, params or ())
-            return UnifiedCursor(cur, True)
-        else:
-            cur = self.conn.execute(query, params or ())
-            return UnifiedCursor(cur, False)
+        cur = self.cursor()
+        return cur.execute(query, params)
 
     def commit(self):
         self.conn.commit()
@@ -51,8 +79,10 @@ class UnifiedConnection:
 
     def cursor(self):
         if self.is_postgres:
-            return self.conn.cursor()
-        return self.conn.cursor()
+            return UnifiedCursor(self.conn.cursor(), True)
+        else:
+            # For SQLite, we might need a wrapper if we want UnifiedCursor behavior
+            return UnifiedCursor(self.conn.cursor(), False)
 
 def get_db_connection():
     if DATABASE_URL and DATABASE_URL.startswith('postgres'):
