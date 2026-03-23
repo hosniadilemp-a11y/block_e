@@ -6,6 +6,16 @@
     .markdown-body ul, .markdown-body ol { padding-left: 1.2rem; }
     .markdown-body h1, .markdown-body h2 { font-size: 1.1rem; margin: 0.5rem 0; color: var(--accent); }
     .markdown-body p { margin-bottom: 0.5rem; }
+    
+    .clickable-card {
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+    }
+    .clickable-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important;
+        filter: brightness(1.1);
+    }
 </style>
 {% endblock %}
 {% block content %}
@@ -29,17 +39,17 @@
         <h2 style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">{{ "{:,.0f}".format(solde).replace(',', ' ') }} DA</h2>
     </div>
     <!-- Total Collecté -->
-    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), transparent); border-left: 4px solid var(--success); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 250px;">
+    <div class="glass-panel clickable-card" onclick="location.href='/appartements'" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), transparent); border-left: 4px solid var(--success); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 250px;">
         <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">Collecté ({{ current_annee }})</h4>
         <h2 class="text-success" style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">+ {{ "{:,.0f}".format(total_cotisations).replace(',', ' ') }} DA</h2>
     </div>
     <!-- Total Dépensé -->
-    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(239,68,68,0.1), transparent); border-left: 4px solid var(--danger); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 250px;">
+    <div class="glass-panel clickable-card" onclick="location.href='/depenses'" style="background: linear-gradient(135deg, rgba(239,68,68,0.1), transparent); border-left: 4px solid var(--danger); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 250px;">
         <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">Dépensé ({{ current_annee }})</h4>
         <h2 class="text-danger" style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">- {{ "{:,.0f}".format(total_depenses).replace(',', ' ') }} DA</h2>
     </div>
     <!-- Résidents à jour -->
-    <div class="glass-panel" style="border-left: 4px solid var(--success); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 200px;">
+    <div class="glass-panel clickable-card" onclick="location.href='/appartements'" style="border-left: 4px solid var(--success); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 200px;">
         <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0; white-space: nowrap;">À jour</h4>
         <h2 class="text-success" style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">{{ nb_a_jour }} / {{ nb_residents_total }}</h2>
     </div>
@@ -87,7 +97,7 @@
             
             <div style="max-height: 600px; overflow-y: auto; padding-right: 0.5rem;">
                 {% for annonce in annonces %}
-                <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-main); border-radius: 8px; border-left: 3px solid var(--accent); border: 1px solid var(--border-light); border-left-width: 4px;">
+                <div class="clickable-card" onclick="location.href='/annonces'" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-main); border-radius: 8px; border-left: 3px solid var(--accent); border: 1px solid var(--border-light); border-left-width: 4px;">
                     <h4 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 1.05rem;" dir="auto">{{ annonce['titre'] }}</h4>
                     <div class="markdown-body" style="font-size: 0.9rem; line-height: 1.4; margin: 0.4rem 0;" dir="auto">
                         <textarea class="md-raw" style="display:none;">{{ annonce['contenu'] | truncate(100, True, '…') }}</textarea>
