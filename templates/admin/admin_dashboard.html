@@ -197,7 +197,7 @@
                         <div style="width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             <span style="font-weight: bold; color: var(--accent);">{{ ann['titre'] }}</span>
                             {% if ann['chemin_document'] %}<i class="fa-solid fa-paperclip text-success" title="Document joint"></i>{% endif %}
-                            <br><small class="text-muted">{{ ann['date'] }} - {{ ann['contenu'][:60] }}...</small>
+                            <br><small class="text-muted">📅 {{ ann['date'][:10] }} &nbsp;·&nbsp; {{ ann['contenu'] | replace('#','') | replace('*','') | replace('_','') | truncate(45, True, '…') }}</small>
                         </div>
                         <div style="display: flex; gap: 0.4rem;">
                             <button type="button" class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"
