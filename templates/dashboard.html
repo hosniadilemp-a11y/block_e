@@ -24,8 +24,8 @@
 <!-- KPI Cards Grid (Responsive Flex) -->
 <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; align-items: stretch;">
     <!-- Solde -->
-    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(16,185,129,0.1)); border-left: 4px solid var(--accent); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; box-shadow: 0 10px 20px rgba(0,0,0,0.15); flex: 1 1 250px;">
-        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">Solde Actuel</h4>
+    <div class="glass-panel" style="background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(16,185,129,0.1)); border-left: 4px solid var(--accent); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; box-shadow: 0 10px 20px rgba(0,0,0,0.15); flex: 1 1 200px;">
+        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0; white-space: nowrap;">Solde</h4>
         <h2 style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">{{ "{:,.0f}".format(solde).replace(',', ' ') }} DA</h2>
     </div>
     <!-- Total Collecté -->
@@ -40,8 +40,8 @@
     </div>
     <!-- Résidents à jour -->
     <div class="glass-panel" style="border-left: 4px solid var(--success); padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex: 1 1 200px;">
-        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0;">Résidents À jour</h4>
-        <h2 class="text-success" style="font-size: 1.6rem; margin: 0; font-weight: 800;">{{ nb_a_jour }} / {{ nb_residents_total }}</h2>
+        <h4 class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; margin: 0; white-space: nowrap;">À jour</h4>
+        <h2 class="text-success" style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">{{ nb_a_jour }} / {{ nb_residents_total }}</h2>
     </div>
 </div>
 </div>

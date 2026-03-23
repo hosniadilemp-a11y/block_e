@@ -459,6 +459,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function submitEditAnnonce(event) {
     event.preventDefault();
     const form = event.target;
+    
+    // Sync EasyMDE content back to the original textarea
+    if (window._editMDE) {
+        document.getElementById('editAnnonceContenu').value = window._editMDE.value().trim();
+    }
+
     const btn = document.getElementById('btnSaveAnnonce');
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enregistrement...';
@@ -466,23 +472,25 @@ function submitEditAnnonce(event) {
     const formData = new FormData(form);
     fetch(form.action, {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
     .then(response => {
-        if (response.redirected || response.ok) {
-            // Success - refresh or update UI
-            window.location.reload(); // Simplest "transparent" fix for now to ensure all lists update
+        if (response.ok) {
+            window.location.reload();
         } else {
             alert("Erreur lors de l'enregistrement.");
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-save"></i> Enregistrer';
+            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Sauvegarder';
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert("Erreur réseau.");
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-save"></i> Enregistrer';
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Sauvegarder';
     });
 }
 </script>
