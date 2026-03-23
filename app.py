@@ -7,6 +7,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from decimal import Decimal
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key_if_missing')
@@ -140,6 +141,8 @@ def index():
             'user_vote_option_id': user_voted['option_id'] if user_voted else None
         })
         
+    nb_residents_total = len(appts)
+    
     annonces = conn.execute("SELECT * FROM annonces ORDER BY date DESC LIMIT 5").fetchall()
     
     timeline_query = """
@@ -165,7 +168,8 @@ def index():
     
     return render_template('dashboard.html', 
                            solde=solde, total_cotisations=total_cotisations, total_depenses=total_depenses,
-                           nb_a_jour=nb_a_jour, nb_en_retard=nb_en_retard, current_annee=str(annee_str),
+                           nb_a_jour=nb_a_jour, nb_en_retard=nb_en_retard, nb_residents_total=nb_residents_total, 
+                           current_annee=str(annee_str),
                            polls=polls_data, annonces=annonces, timeline=timeline,
                            chart_evo=chart_evo, chart_cat=chart_cat)
 
@@ -420,6 +424,8 @@ def edit_annonce(id):
         conn.commit()
         conn.close()
         add_log(session['user_id'], 'Édition Annonce', f'ID {id}')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return {"status": "success", "message": "Annonce mise à jour."}
         flash("Annonce mise à jour.", "success")
     return redirect(url_for('admin_dashboard'))
 
@@ -438,7 +444,7 @@ def add_cotisation():
         user_row = conn.execute("SELECT id FROM users WHERE appartement_numero = ?", (numero,)).fetchone()
         if user_row:
             conn.execute("INSERT INTO cotisations (user_id, montant, annee, date) VALUES (?, ?, ?, ?)", 
-                        (user_row['id'], float(montant), int(annee), date_val))
+                        (user_row['id'], Decimal(str(montant)), int(annee), date_val))
             conn.commit()
             add_log(session['user_id'], 'Ajout Cotisation', f'Appt {numero}, Montant: {montant}, Date: {date_val}')
             flash(f"Cotisation de {montant} DA pour l'Apt {numero} ajoutée.", "success")
@@ -511,12 +517,12 @@ def add_depense():
     
     if desc and mont >= 0:
         conn = get_db_connection()
-        total_cot = conn.execute("SELECT SUM(montant) FROM cotisations").fetchone()[0] or 0
-        total_dep = conn.execute("SELECT SUM(montant) FROM depenses").fetchone()[0] or 0
-        solde_apres = total_cot - total_dep - mont
+        total_cot = conn.execute("SELECT SUM(montant) FROM cotisations").fetchone()[0] or Decimal('0')
+        total_dep = conn.execute("SELECT SUM(montant) FROM depenses").fetchone()[0] or Decimal('0')
+        solde_apres = Decimal(total_cot) - Decimal(total_dep) - Decimal(str(mont))
         
         conn.execute("INSERT INTO depenses (description, montant, date, categorie, payePar, soldeApres) VALUES (?, ?, ?, ?, ?, ?)",
-                    (desc, mont, date_val, cat, paye, solde_apres))
+                    (desc, Decimal(str(mont)), date_val, cat, paye, solde_apres))
         conn.commit()
         conn.close()
         add_log(session['user_id'], 'Ajout Dépense', f'Montant: {mont}, Date: {date_val}')

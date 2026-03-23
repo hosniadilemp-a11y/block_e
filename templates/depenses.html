@@ -37,7 +37,6 @@
                     <th>Catégorie</th>
                     <th>Payé par</th>
                     <th style="text-align: right;">Montant</th>
-                    <th style="text-align: right;">Solde après</th>
                 </tr>
             </thead>
             <tbody>
@@ -48,11 +47,10 @@
                     <td><span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ d['categorie'] }}</span></td>
                     <td>{{ d['payePar'] }}</td>
                     <td class="text-danger" style="text-align: right; font-weight: bold;">- {{ "{:,.0f}".format(d['montant']).replace(',', ' ') }} DA</td>
-                    <td class="text-accent" style="text-align: right; font-weight: bold;">{{ "{:,.0f}".format(d['soldeApres'] or 0).replace(',', ' ') }} DA</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted">Aucune dépense trouvée.</td>
+                    <td colspan="5" class="text-center text-muted">Aucune dépense trouvée.</td>
                 </tr>
                 {% endfor %}
             </tbody>
