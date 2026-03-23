@@ -47,14 +47,30 @@ class UnifiedCursor:
             self.cursor.execute(query, params or ())
             return self
 
+    def _convert_row(self, row):
+        """Auto-convert datetime -> string for PostgreSQL rows."""
+        if row is None:
+            return None
+        if self.is_postgres:
+            import datetime
+            converted = {}
+            for k in row.keys():
+                v = row[k]
+                if isinstance(v, (datetime.datetime, datetime.date)):
+                    v = str(v)
+                converted[k] = v
+            return converted
+        return row
+
     def fetchone(self):
-        return self.cursor.fetchone()
+        return self._convert_row(self.cursor.fetchone())
 
     def fetchall(self):
-        return self.cursor.fetchall()
+        return [self._convert_row(r) for r in self.cursor.fetchall()]
 
     def __iter__(self):
-        return iter(self.cursor)
+        for row in self.cursor:
+            yield self._convert_row(row)
 
     @property
     def lastrowid(self):
