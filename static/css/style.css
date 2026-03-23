@@ -153,14 +153,68 @@ tr:hover td { background: var(--border-light); }
 .timeline-item.depense::before { border-color: var(--danger); }
 .timeline-date { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.2rem; }
 
-/* Modals */
-.modal-backdrop {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-    display: none; justify-content: center; align-items: center; z-index: 1000;
+/* Specific Mobile Optimizations */
+@media (max-width: 600px) {
+    :root {
+        --navbar-height: 60px;
+    }
+    
+    .container {
+        margin: 1rem auto;
+        padding: 0 1rem;
+        padding-bottom: 80px; /* Space for bottom nav */
+    }
+
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.3rem; }
+    
+    /* Bottom Navigation for Mobile */
+    .navbar {
+        position: fixed;
+        bottom: 0;
+        top: auto;
+        width: 100%;
+        height: 65px;
+        padding: 0 1rem;
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid var(--border-light);
+        border-bottom: none;
+        justify-content: space-around;
+        z-index: 1000;
+    }
+
+    .navbar-brand { display: none; }
+    .navbar-nav { width: 100%; justify-content: space-around; gap: 0; }
+    .nav-item a { 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        font-size: 0.7rem; 
+        gap: 4px; 
+    }
+    .nav-item a i { font-size: 1.2rem; }
+    
+    .user-info { display: none; } /* Hide user info/theme on mobile nav to save space */
+    
+    /* KPI Cards Stacking */
+    .dashboard-grid { gap: 1rem; }
+    .glass-panel { padding: 1rem; }
 }
-.modal-content {
-    background: var(--bg-main); border: 1px solid var(--border-light);
-    border-radius: 1rem; width: 90%; max-width: 500px; padding: 2rem; position: relative;
+
+/* Building Scroll for small screens */
+.scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    padding: 1rem 0;
+    -webkit-overflow-scrolling: touch;
 }
-.modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+
+/* Modals Responsive */
+@media (max-width: 480px) {
+    .modal-content {
+        padding: 1.5rem;
+        width: 95%;
+    }
+}
