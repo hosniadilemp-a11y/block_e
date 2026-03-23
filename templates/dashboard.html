@@ -44,7 +44,6 @@
         <h2 class="text-success" style="font-size: 1.6rem; margin: 0; font-weight: 800; white-space: nowrap;">{{ nb_a_jour }} / {{ nb_residents_total }}</h2>
     </div>
 </div>
-</div>
 
 <div class="dashboard-grid">
     <!-- Main Column: Charts & Timeline -->
@@ -174,6 +173,10 @@
         if(mIndex >= 0 && mIndex < 12) evoData[mIndex] = evoDataRaw[k];
     });
     
+    // Theme-aware Chart colors
+    const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-main').trim();
+    const gridColor = document.body.classList.contains('light-mode') ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
     new Chart(evoCtx, {
         type: 'line',
         data: {
@@ -189,8 +192,11 @@
         options: {
             responsive: true,
             plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, grid: { color: 'rgba(150,150,150,0.1)' } }, x: { grid: { color: 'rgba(150,150,150,0)' } } },
-            color: '#cbd5e1'
+            scales: { 
+                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: chartTextColor } }, 
+                x: { grid: { display: false }, ticks: { color: chartTextColor } } 
+            },
+            color: chartTextColor
         }
     });
 
@@ -214,7 +220,10 @@
             responsive: true,
             cutout: '75%',
             plugins: {
-                legend: { position: 'bottom', labels: { color: '#cbd5e1', boxWidth: 12, padding: 10 } }
+                legend: { 
+                    position: 'bottom', 
+                    labels: { color: chartTextColor, boxWidth: 12, padding: 10, font: { size: 11, weight: '500' } } 
+                }
             }
         }
     });
