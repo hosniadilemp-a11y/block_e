@@ -29,7 +29,7 @@
         <h3 style="font-size: 1.5rem; margin-top: 0.5rem; margin-bottom: 1rem; color: {% if annonce['chemin_document'] %}var(--success){% else %}var(--accent){% endif %};">
             {{ annonce['titre'] }}
         </h3>
-        <div class="markdown-body" style="font-size: 1.05rem; line-height: 1.7; color: var(--text-color);">{{ annonce['contenu'] }}</div>
+        <div class="markdown-body" data-md="{{ annonce['contenu'] | e }}" style="font-size: 1.05rem; line-height: 1.7; color: var(--text-color);"></div>
         
         {% if annonce['chemin_document'] %}
             <div style="margin-top: 1.5rem; background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 8px;">
@@ -65,7 +65,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.markdown-body').forEach(block => {
-            const rawContent = block.innerText || block.textContent;
+            const rawContent = block.getAttribute('data-md') || block.innerText || block.textContent;
             block.innerHTML = marked.parse(rawContent, { breaks: true, gfm: true });
         });
     });
