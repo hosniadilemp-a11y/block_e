@@ -5,13 +5,14 @@ from io import StringIO
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Response, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from decimal import Decimal
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key_if_missing')
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 from database import get_db_connection
@@ -61,6 +62,7 @@ def login():
                     conn.commit()
                     user = conn.execute("SELECT * FROM users WHERE username = 'admin'").fetchone()
                 
+                session.permanent = True
                 session['user_id'] = user['id']
                 session['username'] = user['username']
                 session['role'] = user['role']
@@ -73,6 +75,7 @@ def login():
         conn.close()
         
         if user and check_password_hash(user['password'], password):
+            session.permanent = True
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
@@ -89,6 +92,7 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/')
+@login_required
 def index():
     annee_str = request.args.get('annee', 'all')
     conn = get_db_connection()
@@ -191,6 +195,7 @@ def vote(poll_id):
     return redirect(url_for('index'))
 
 @app.route('/annonces')
+@login_required
 def annonces():
     conn = get_db_connection()
     ann_list = conn.execute("SELECT * FROM annonces ORDER BY date DESC").fetchall()
@@ -198,6 +203,7 @@ def annonces():
     return render_template('annonces.html', annonces=ann_list)
 
 @app.route('/appartements')
+@login_required
 def appartements():
     annee_str = request.args.get('annee', 'all')
     conn = get_db_connection()
@@ -236,6 +242,7 @@ def appartements():
     return render_template('appartements.html', appartements=enriched_appts, current_annee=str(annee_str), total_amount=total_amount)
 
 @app.route('/api/appartement/<int:appt_id>')
+@login_required
 def get_appartement(appt_id):
     conn = get_db_connection()
     appt = conn.execute("SELECT * FROM users WHERE id = ?", (appt_id,)).fetchone()
@@ -250,6 +257,7 @@ def get_appartement(appt_id):
     })
 
 @app.route('/depenses')
+@login_required
 def depenses():
     cat = request.args.get('categorie')
     annee = request.args.get('annee', 'all')
@@ -342,7 +350,7 @@ def admin_dashboard():
                            cotisations=cotisations_recentes, active_polls=active_polls,
                            annonces=annonces_recentes, system_users=system_users)
 
-@app.route('/admin/super_secret_logs_xyz123', methods=['GET'])
+@app.route('/admin/logsadmin', methods=['GET'])
 @admin_required
 def admin_logs():
     if session.get('username') != 'admin':
