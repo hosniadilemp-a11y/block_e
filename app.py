@@ -182,27 +182,57 @@ def index():
 @login_required
 def vote(poll_id):
     option_id = request.form.get('option_id')
-    if option_id:
-        conn = get_db_connection()
-        # Check if already voted (Cross-DB safety)
-        voted = conn.execute("SELECT id FROM votes WHERE user_id = ? AND poll_id = ?", 
-                            (session['user_id'], poll_id)).fetchone()
-        
-        if voted:
-            conn.close()
-            flash("Erreur : Vous avez déjà voté pour ce sondage.", "warning")
-            return redirect(url_for('index'))
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.args.get('format') == 'json'
+    
+    if not option_id:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Veuillez sélectionner une option.'}), 400
+        flash("Veuillez sélectionner une option.", "warning")
+        return redirect(url_for('index'))
 
-        try:
-            conn.execute("INSERT INTO votes (user_id, option_id, poll_id) VALUES (?, ?, ?)", 
-                        (session['user_id'], option_id, poll_id))
-            conn.commit()
-            add_log(session['user_id'], 'Vote', f'Poll ID {poll_id}')
-            flash("Vote enregistré avec succès.", "success")
-        except Exception as e:
-            flash(f"Erreur lors du vote : {str(e)}", "danger")
-        finally:
-            conn.close()
+    conn = get_db_connection()
+    # Check if already voted
+    voted = conn.execute("SELECT id FROM votes WHERE user_id = ? AND poll_id = ?", 
+                        (session['user_id'], poll_id)).fetchone()
+    
+    if voted:
+        conn.close()
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Vous avez déjà voté pour ce sondage.'}), 400
+        flash("Erreur : Vous avez déjà voté pour ce sondage.", "warning")
+        return redirect(url_for('index'))
+
+    try:
+        conn.execute("INSERT INTO votes (user_id, option_id, poll_id) VALUES (?, ?, ?)", 
+                    (session['user_id'], option_id, poll_id))
+        conn.commit()
+        add_log(session['user_id'], 'Vote', f'Poll ID {poll_id}')
+        
+        if is_ajax:
+            # Fetch updated results for JSON response
+            options = conn.execute("SELECT id, texte, votes FROM poll_options WHERE poll_id = ?", (poll_id,)).fetchall()
+            options_list = [dict(opt) for opt in options]
+            total_votes = sum(opt['votes'] for opt in options_list)
+            
+            for opt in options_list:
+                opt['pct'] = round((opt['votes'] / total_votes * 100)) if total_votes > 0 else 0
+                opt['user_voted'] = (str(opt['id']) == str(option_id))
+
+            return jsonify({
+                'success': True, 
+                'message': 'Vote enregistré avec succès.',
+                'total_votes': total_votes,
+                'options': options_list
+            })
+            
+        flash("Vote enregistré avec succès.", "success")
+    except Exception as e:
+        if is_ajax:
+            return jsonify({'success': False, 'message': f'Erreur : {str(e)}'}), 500
+        flash(f"Erreur lors du vote : {str(e)}", "danger")
+    finally:
+        conn.close()
+        
     return redirect(url_for('index'))
 
 @app.route('/annonces')

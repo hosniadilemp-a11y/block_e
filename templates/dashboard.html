@@ -201,74 +201,77 @@
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Render Markdown
-        document.querySelectorAll('.markdown-body').forEach(block => {
-            const raw = block.querySelector('.md-raw')?.value || block.getAttribute('data-md') || block.textContent;
-            block.innerHTML = marked.parse(raw);
-        });
-    });
+    document.addEventListener('submit', async (e) => {
+        if (e.target.matches('form[action^="/vote/"]')) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const url = form.action + '?format=json';
+            const pollCard = form.closest('.poll-card');
+            const submitBtn = form.querySelector('button[type="submit"]');
 
-    // Evolution Chart
-    const evoCtx = document.getElementById('evoChart').getContext('2d');
-    const evoDataRaw = {{ chart_evo|tojson }};
-    const evoLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-    const evoData = Array(12).fill(0);
-    Object.keys(evoDataRaw).forEach(k => {
-        let mIndex = parseInt(k) - 1;
-        if(mIndex >= 0 && mIndex < 12) evoData[mIndex] = evoDataRaw[k];
-    });
-    
-    // Theme-aware Chart colors
-    const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-main').trim();
-    const gridColor = document.body.classList.contains('light-mode') ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+            if (!formData.get('option_id')) {
+                alert("Veuillez sélectionner une option.");
+                return;
+            }
 
-    new Chart(evoCtx, {
-        type: 'line',
-        data: {
-            labels: evoLabels,
-            datasets: [{
-                label: 'Dépenses',
-                data: evoData,
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                fill: true, tension: 0.4, borderWidth: 3
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { 
-                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: chartTextColor } }, 
-                x: { grid: { display: false }, ticks: { color: chartTextColor } } 
-            },
-            color: chartTextColor
-        }
-    });
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Envoi...';
+                }
 
-    // Category Pie Chart
-    const catCtx = document.getElementById('catChart').getContext('2d');
-    const catDataRaw = {{ chart_cat|tojson }};
-    const catColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#64748b'];
-    
-    new Chart(catCtx, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(catDataRaw),
-            datasets: [{
-                data: Object.values(catDataRaw),
-                backgroundColor: catColors,
-                borderWidth: 2,
-                borderColor: 'var(--bg-card)'
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '75%',
-            plugins: {
-                legend: { 
-                    position: 'bottom', 
-                    labels: { color: chartTextColor, boxWidth: 12, padding: 10, font: { size: 11, weight: '500' } } 
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Re-render the poll card with results
+                    let html = `<h4 style="margin-bottom: 1.2rem; line-height: 1.4; font-weight: 700; color: var(--text-main);">${pollCard.querySelector('h4').textContent}</h4>`;
+                    
+                    result.options.forEach(opt => {
+                        html += `
+                            <div style="margin-bottom: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 600;">
+                                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                                        ${opt.texte}
+                                        ${opt.user_voted ? '<span class="badge" style="background: var(--success); font-size: 0.65rem; padding: 2px 6px;">Votre choix</span>' : ''}
+                                    </span>
+                                    <span class="text-accent">${opt.pct}%</span>
+                                </div>
+                                <div style="width: 100%; background: rgba(0,0,0,0.2); height: 10px; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="width: ${opt.pct}%; background: linear-gradient(90deg, #3b82f6, #60a5fa); height: 100%; border-radius: 20px; transition: width 1s ease;"></div>
+                                </div>
+                                <div style="text-align: right; font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${opt.votes} vote(s)</div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                            <span class="badge" style="background: rgba(16,185,129,0.1); color: var(--success); border: 1px solid var(--success);">Merci pour votre vote !</span>
+                            <small class="text-muted"><i class="fa-solid fa-users"></i> ${result.total_votes} participants</small>
+                        </div>
+                    `;
+
+                    pollCard.innerHTML = html;
+                } else {
+                    alert(result.message || "Une erreur est survenue.");
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Voter';
+                    }
+                }
+            } catch (err) {
+                console.error("AJAX Vote Error:", err);
+                alert("Erreur de connexion lors du vote.");
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Voter';
                 }
             }
         }
