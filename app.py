@@ -209,8 +209,14 @@ def vote(poll_id):
         add_log(session['user_id'], 'Vote', f'Poll ID {poll_id}')
         
         if is_ajax:
-            # Fetch updated results for JSON response
-            options = conn.execute("SELECT id, texte, votes FROM poll_options WHERE poll_id = ?", (poll_id,)).fetchall()
+            # Fetch updated results for JSON response (Count votes from votes table)
+            options = conn.execute("""
+                SELECT po.id, po.texte, 
+                       (SELECT COUNT(*) FROM votes v WHERE v.option_id = po.id) as votes
+                FROM poll_options po 
+                WHERE po.poll_id = ?
+            """, (poll_id,)).fetchall()
+            
             options_list = [dict(opt) for opt in options]
             total_votes = sum(opt['votes'] for opt in options_list)
             
