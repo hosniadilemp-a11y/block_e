@@ -183,16 +183,26 @@ def index():
 def vote(poll_id):
     option_id = request.form.get('option_id')
     if option_id:
+        conn = get_db_connection()
+        # Check if already voted (Cross-DB safety)
+        voted = conn.execute("SELECT id FROM votes WHERE user_id = ? AND poll_id = ?", 
+                            (session['user_id'], poll_id)).fetchone()
+        
+        if voted:
+            conn.close()
+            flash("Erreur : Vous avez déjà voté pour ce sondage.", "warning")
+            return redirect(url_for('index'))
+
         try:
-            conn = get_db_connection()
             conn.execute("INSERT INTO votes (user_id, option_id, poll_id) VALUES (?, ?, ?)", 
                         (session['user_id'], option_id, poll_id))
             conn.commit()
-            conn.close()
-            flash("Vote enregistré.", "success")
             add_log(session['user_id'], 'Vote', f'Poll ID {poll_id}')
-        except sqlite3.IntegrityError:
-            flash("Vous avez déjà voté.", "danger")
+            flash("Vote enregistré avec succès.", "success")
+        except Exception as e:
+            flash(f"Erreur lors du vote : {str(e)}", "danger")
+        finally:
+            conn.close()
     return redirect(url_for('index'))
 
 @app.route('/annonces')
