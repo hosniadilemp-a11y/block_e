@@ -54,7 +54,9 @@
             <h3><i class="fa-solid fa-bullhorn text-warning"></i> Diffuser une Annonce</h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Utilisez l'éditeur ci-dessous pour rédiger une annonce enrichie. Elle sera visible sur le tableau de bord des résidents.</p>
             <form action="{{ url_for('add_annonce') }}" method="POST" style="display: flex; flex-direction: column; gap: 1rem;" id="annonce-form">
-                <input type="text" name="titre" class="form-control" placeholder="Titre de l'annonce (ex: Réunion de copropriété)" required>
+                <label for="annonce_titre" class="visually-hidden">Titre de l'annonce</label>
+                <input type="text" id="annonce_titre" name="titre" class="form-control" placeholder="Titre de l'annonce (ex: Réunion de copropriété)" required>
+                <label for="annonce-editor" class="visually-hidden">Contenu de l'annonce</label>
                 <textarea name="contenu" id="annonce-editor" required></textarea>
                 <button type="submit" class="btn btn-warning" style="width:100%; padding: 0.9rem; font-size: 1rem;"><i class="fa-solid fa-paper-plane"></i> Publier l'Annonce</button>
             </form>
@@ -65,28 +67,28 @@
             <h3><i class="fa-solid fa-hand-holding-dollar text-success"></i> Saisir une Cotisation</h3>
             <form action="{{ url_for('add_cotisation') }}" method="POST" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
                 <div>
-                    <label>N° Appartement</label>
-                    <select name="numero" class="form-control" required>
+                    <label for="cot_numero">N° Appartement</label>
+                    <select id="cot_numero" name="numero" class="form-control" required>
                         {% for a in appartements %}
                         <option value="{{ a['appartement_numero'] }}">Apt {{ a['appartement_numero'] }} - {{ a['nom_complet'] or a['username'] }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div>
-                    <label>Montant (DA)</label>
-                    <input type="number" name="montant" class="form-control" placeholder="Ex: 5000" required>
+                    <label for="cot_montant">Montant (DA)</label>
+                    <input type="number" id="cot_montant" name="montant" class="form-control" placeholder="Ex: 5000" required>
                 </div>
                 <div>
-                    <label>Année fiscale</label>
-                    <select name="annee" class="form-control" required>
+                    <label for="cot_annee">Année fiscale</label>
+                    <select id="cot_annee" name="annee" class="form-control" required>
                         <option value="2027">2027</option>
                         <option value="2026" selected>2026</option>
                         <option value="2025">2025</option>
                     </select>
                 </div>
                 <div style="grid-column: 1 / -1;">
-                    <label>Date Exacte</label>
-                    <input type="date" name="date" class="form-control" required>
+                    <label for="cot_date">Date Exacte</label>
+                    <input type="date" id="cot_date" name="date" class="form-control" required>
                 </div>
                 <div style="grid-column: 1 / -1; text-align: right;">
                     <button type="submit" class="btn btn-success">Encaisser</button>
@@ -97,18 +99,18 @@
         <!-- Saisie Dépense -->
         <div class="glass-panel" style="margin-bottom: 2rem; border-top: 4px solid var(--danger);">
             <h3><i class="fa-solid fa-money-bill-transfer text-danger"></i> Saisir une Dépense</h3>
-            <form action="{{ url_for('add_depense') }}" method="POST" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <form action="{{ url_for('add_depense') }}" method="POST" enctype="multipart/form-data" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div style="grid-column: 1 / -1;">
-                    <label>Description (Objet de la dépense)</label>
-                    <input type="text" name="description" class="form-control" required>
+                    <label for="dep_description">Description (Objet de la dépense)</label>
+                    <input type="text" id="dep_description" name="description" class="form-control" required>
                 </div>
                 <div>
-                    <label>Montant (DA)</label>
-                    <input type="number" step="0.01" name="montant" class="form-control" required>
+                    <label for="dep_montant">Montant (DA)</label>
+                    <input type="number" step="0.01" id="dep_montant" name="montant" class="form-control" required>
                 </div>
                 <div>
-                    <label>Catégorie</label>
-                    <select name="categorie" class="form-control" required>
+                    <label for="dep_categorie">Catégorie</label>
+                    <select id="dep_categorie" name="categorie" class="form-control" required>
                         <option value="Maintenance">Maintenance</option>
                         <option value="Nettoyage">Nettoyage</option>
                         <option value="Électricité">Électricité</option>
@@ -118,12 +120,27 @@
                     </select>
                 </div>
                 <div>
-                    <label>Payé par (Optionnel)</label>
-                    <input type="text" name="payePar" class="form-control" placeholder="Nom du responsable">
+                    <label for="dep_user_id"><i class="fa-solid fa-user"></i> Payé par (Optionnel)</label>
+                    <select id="dep_user_id" name="user_id" class="form-control">
+                        <option value="">-- Système / Non spécifié --</option>
+                        {% for u in all_users %}
+                            <option value="{{ u['id'] }}">{{ u['nom_complet'] or u['username'] }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div>
-                    <label>Date Exacte</label>
-                    <input type="date" name="date" class="form-control" required>
+                    <label for="dep_date">Date Exacte</label>
+                    <input type="date" id="dep_date" name="date" class="form-control" required>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.1); border-radius: 8px;">
+                    <input type="checkbox" name="paye" id="paye_check" value="1" checked style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="paye_check" style="cursor: pointer; margin:0;"><i class="fa-solid fa-circle-check text-success"></i> Dépense Payée</label>
+                    <small class="text-muted" style="font-size:0.75rem;">(Décocher = En attente)</small>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label for="dep_document"><i class="fa-solid fa-paperclip"></i> Joindre un Document (Optionnel)</label>
+                    <input type="file" id="dep_document" name="document" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+                    <small class="text-muted">Si un fichier est joint, une annonce sera publiée automatiquement.</small>
                 </div>
                 <div style="grid-column: 1 / -1; text-align: right;">
                     <button type="submit" class="btn btn-danger">Enregistrer la dépense</button>
@@ -131,6 +148,35 @@
             </form>
         </div>
         
+        <!-- Suggestions des Résidents -->
+        <div class="glass-panel" style="margin-bottom: 2rem; border-top: 4px solid var(--success);">
+            <h3><i class="fa-solid fa-lightbulb text-success"></i> Suggestions des Résidents</h3>
+            <div style="max-height: 400px; overflow-y: auto;">
+                {% for s in suggestions %}
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border-light); background: rgba(0,0,0,0.05); border-radius: 8px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <strong>{{ s['titre'] }}</strong>
+                        <small class="text-muted">{{ s['date'].split(' ')[0] }}</small>
+                    </div>
+                    <p style="font-size: 0.9rem; margin: 0.5rem 0;">{{ s['description'] }}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <small class="text-accent">Par {{ s['nom_complet'] or s['username'] }}</small>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                             <button class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="preFillAnnonce('{{ s['titre'] | replace("'", "\\'") }}', '{{ s['description'] | replace("'", "\\'") | replace("\n", "\\n") }}')"><i class="fa-solid fa-bullhorn"></i> En Annonce</button>
+                             <button class="btn btn-accent" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="preFillPoll('{{ s['titre'] | replace("'", "\\'") }}')"><i class="fa-solid fa-square-poll-horizontal"></i> En Sondage</button>
+                             <form action="{{ url_for('admin_suggestion_action', id=s['id']) }}" method="POST" style="margin:0;" onsubmit="return confirm('Supprimer cette suggestion ?');">
+                                 <input type="hidden" name="action" value="delete">
+                                 <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                             </form>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">Aucune suggestion en attente.</p>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- Gestion & Edition / Suppression Rapide -->
         <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;"> <!-- Changed from 1fr 1fr to 1fr vertical stack -->
             
@@ -146,7 +192,11 @@
                         </div>
                         <div style="display: flex; gap: 0.5rem;">
                             <!-- Edit Button -->
-                            <button class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="openEditCotisation({{ c['id'] }}, {{ c['montant'] }}, {{ c['annee'] }}, '{{ c['date'].split(' ')[0] }}')">
+                            <button class="btn btn-warning edit-cotisation-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" 
+                                data-id="{{ c['id'] }}" 
+                                data-montant="{{ c['montant'] }}" 
+                                data-annee="{{ c['annee'] }}" 
+                                data-date="{{ c['date'].split(' ')[0] }}">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
                             <!-- Delete Button -->
@@ -162,18 +212,35 @@
             </div>
             
             <!-- Liste Dépenses Récentes -->
-            <div class="glass-panel" style="max-height: 400px; overflow-y: auto;">
+            <div class="glass-panel" style="max-height: 450px; overflow-y: auto;">
                 <h4 class="text-danger"><i class="fa-solid fa-list-check"></i> Dépenses (Dernières saisies)</h4>
                 <ul style="list-style: none; padding: 0;">
                     {% for d in depenses %}
-                    <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-light);">
+                    <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-light); {% if not d['paye'] %}background: rgba(255,140,0,0.08); border-radius: 8px; padding: 0.8rem;{% endif %}">
                         <div style="width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            <span style="font-weight: bold;">{{ d['categorie'] }}</span> - {{ "{:,.0f}".format(d['montant']).replace(',', ' ') }} DA <br>
-                            <small class="text-muted" title="{{ d['description'] }}">{{ d['date'] }} - {{ d['description'] }}</small>
+                            <span style="font-weight: bold;">{{ d['categorie'] }}</span> - {{ "{:,.0f}".format(d['montant']).replace(',', ' ') }} DA
+                            {% if not d['paye'] %}<span style="background:#f97316; color:#fff; font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:4px; margin-left:0.3rem;">⏳ Non Payé</span>{% endif %}
+                            <br>
+                            <small class="text-muted" title="{{ d['description'] }}">{{ d['date'] }} - {{ d['description'] }}</small><br>
+                            <small class="text-accent"><i class="fa-solid fa-user"></i> Par {{ d['paye_nom'] or d['paye_username'] or 'Anonyme' }}</small>
                         </div>
-                        <div style="display: flex; gap: 0.5rem;">
+                        <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: flex-end;">
+                            {% if not d['paye'] %}
+                            <form action="{{ url_for('pay_depense', id=d['id']) }}" method="POST">
+                                <button type="submit" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background:#22c55e; color:#fff; border:none; border-radius:6px;" title="Marquer comme Payé">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                             <!-- Edit Button -->
-                            <button class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="openEditDepense({{ d['id'] }}, '{{ d['description'] | replace('\'', '\\\'') | replace('\"', '\\\"') }}', {{ d['montant'] }}, '{{ d['categorie'] }}', '{{ d['date'].split(' ')[0] }}')">
+                            <button class="btn btn-warning edit-depense-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" 
+                                data-id="{{ d['id'] }}" 
+                                data-description='{{ d["description"] | replace("'", "&apos;") }}'
+                                data-montant="{{ d['montant'] }}" 
+                                data-categorie="{{ d['categorie'] }}" 
+                                data-date="{{ d['date'].split(' ')[0] }}" 
+                                data-user-id="{{ d['user_id'] or '' }}" 
+                                data-paye="{{ 1 if d['paye'] else 0 }}">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
                             <!-- Delete Button -->
@@ -197,7 +264,7 @@
                         <div style="width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             <span style="font-weight: bold; color: var(--accent);">{{ ann['titre'] }}</span>
                             {% if ann['chemin_document'] %}<i class="fa-solid fa-paperclip text-success" title="Document joint"></i>{% endif %}
-                            <br><small class="text-muted">📅 {{ ann['date'][:10] }} &nbsp;·&nbsp; {{ ann['contenu'] | replace('#','') | replace('*','') | replace('_','') | truncate(45, True, '…') }}</small>
+                            <br><small class="text-muted">📅 {{ ann['date'][:10] }} &nbsp;·&nbsp; Publié par {{ ann['auteur_nom'] or ann['auteur_username'] or 'Système' }} &nbsp;·&nbsp; {{ ann['contenu'] | replace('#','') | replace('*','') | replace('_','') | truncate(45, True, '…') }}</small>
                         </div>
                         <div style="display: flex; gap: 0.4rem;">
                             <button type="button" class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"
@@ -220,28 +287,7 @@
     </div>
 
     <div class="side-col">
-        <!-- Archiver un document -->
-        <div class="glass-panel" style="margin-bottom: 2rem;">
-            <h3><i class="fa-solid fa-file-pdf text-accent"></i> Ajouter un Document</h3>
-            <form action="{{ url_for('upload_document') }}" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1rem;">
-                <input type="text" name="titre" class="form-control" placeholder="Titre complet du document" required>
-                <select name="categorie" class="form-control">
-                    <option value="Facture">Facture Globale</option>
-                    <option value="Devis">Devis Travaux</option>
-                    <option value="Rapport">Compte Rendu Assemblée</option>
-                    <option value="Autre">Autre</option>
-                </select>
-                <select name="annee" class="form-control">
-                    <option value="2027">2027</option>
-                    <option value="2026" selected>2026</option>
-                    <option value="2025">2025</option>
-                </select>
-                <input type="file" name="document" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
-                <button type="submit" class="btn btn-accent"><i class="fa-solid fa-upload"></i> Uploader et Annoncer</button>
-            </form>
-        </div>
-        
-        <!-- Créer un sondage -->
+        <!-- Créer un sondage (document panel removed, merged into expense form above) -->
         <div class="glass-panel" style="margin-bottom: 2rem;">
             <h3><i class="fa-solid fa-square-poll-horizontal text-accent"></i> Créer Sondage</h3>
             <form action="{{ url_for('add_poll') }}" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -259,9 +305,14 @@
             {% for poll in active_polls %}
             <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
                 <strong>{{ poll['question'] }}</strong>
-                <form action="{{ url_for('close_poll', id=poll['id']) }}" method="POST" style="margin-top: 0.5rem;" onsubmit="return confirm('Clôturer ce sondage et publier les résultats d\'audience ?');">
-                    <button type="submit" class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;"><i class="fa-solid fa-lock"></i> Clôturer & Publier</button>
-                </form>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <form action="{{ url_for('close_poll', id=poll['id']) }}" method="POST" onsubmit="return confirm('Clôturer ce sondage et publier les résultats d\'audience ?');">
+                        <button type="submit" class="btn btn-warning" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-lock"></i> Clôturer</button>
+                    </form>
+                    <form action="{{ url_for('delete_poll', id=poll['id']) }}" method="POST" onsubmit="return confirm('Supprimer ce sondage définitivement ?');">
+                        <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-trash"></i> Supprimer</button>
+                    </form>
+                </div>
             </div>
             {% else %}
             <p class="text-muted" style="font-size: 0.9rem;">Aucun sondage actif.</p>
@@ -272,9 +323,11 @@
         <div class="glass-panel" style="margin-bottom: 2rem;">
             <h3><i class="fa-solid fa-users-gear text-primary"></i> Gestion Accès</h3>
             
-            <form action="{{ url_for('admin_add_user') }}" method="POST" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem;">
-                <input type="text" name="username" class="form-control" placeholder="Nom d'utilisateur" required>
-                <input type="password" name="password" class="form-control" placeholder="Mot de passe" required>
+            <form action="{{ url_for('admin_add_user') }}" method="POST" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <label for="new_user_name" class="visually-hidden">Nom d'utilisateur</label>
+                <input type="text" id="new_user_name" name="username" class="form-control" placeholder="Nom d'utilisateur" required>
+                <label for="new_user_pwd" class="visually-hidden">Mot de passe</label>
+                <input type="password" id="new_user_pwd" name="password" class="form-control" placeholder="Mot de passe" required>
                 <select name="role" class="form-control">
                     <option value="resident">Résident</option>
                     <option value="admin">Administrateur</option>
@@ -296,7 +349,8 @@
                     </div>
                     
                     <form action="{{ url_for('admin_reset_user', id=u['id']) }}" method="POST" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-                        <input type="password" name="new_password" class="form-control" placeholder="Nouveau pswd" style="padding: 0.3rem; font-size: 0.8rem;" required>
+                        <label for="reset_pwd_{{ u['id'] }}" class="visually-hidden">Nouveau mot de passe pour {{ u['username'] }}</label>
+                        <input type="password" id="reset_pwd_{{ u['id'] }}" name="new_password" class="form-control" placeholder="Nouveau pswd" style="padding: 0.3rem; font-size: 0.8rem;" required>
                         <button type="submit" class="btn btn-warning" style="padding: 0.3rem; font-size: 0.8rem;"><i class="fa-solid fa-key"></i></button>
                     </form>
                 </div>
@@ -314,16 +368,16 @@
             <h3 class="text-success" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-pen"></i> Éditer la Cotisation</h3>
             <form action="/admin/cotisation/edit/${id}" method="POST" style="display: flex; flex-direction: column; gap: 1.2rem;">
                 <div>
-                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Nouveau Montant (DA)</label>
-                    <input type="number" name="montant" value="${montant}" class="form-control" required style="width: 100%;">
+                    <label for="edit_cot_montant" style="display:block; margin-bottom:0.4rem; font-weight:bold;">Nouveau Montant (DA)</label>
+                    <input type="number" id="edit_cot_montant" name="montant" value="${montant}" class="form-control" required style="width: 100%;">
                 </div>
                 <div>
-                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Date Exacte</label>
-                    <input type="date" name="date" value="${date}" class="form-control" required style="width: 100%;">
+                    <label for="edit_cot_date" style="display:block; margin-bottom:0.4rem; font-weight:bold;">Date Exacte</label>
+                    <input type="date" id="edit_cot_date" name="date" value="${date}" class="form-control" required style="width: 100%;">
                 </div>
                 <div>
-                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Année</label>
-                    <select name="annee" class="form-control" required style="width: 100%;">
+                    <label for="edit_cot_annee" style="display:block; margin-bottom:0.4rem; font-weight:bold;">Année</label>
+                    <select id="edit_cot_annee" name="annee" class="form-control" required style="width: 100%;">
                         <option value="2027" ${annee == 2027 ? 'selected':''}>2027</option>
                         <option value="2026" ${annee == 2026 ? 'selected':''}>2026</option>
                         <option value="2025" ${annee == 2025 ? 'selected':''}>2025</option>
@@ -335,48 +389,92 @@
         document.getElementById('genericModal').style.display = 'flex';
     }
 
-    function openEditDepense(id, desc, montant, cat, date) {
-        let catOptions = ['Maintenance', 'Nettoyage', 'Électricité', 'Sécurité', 'Réparation', 'Autre'].map(
+    const ALL_USERS = [
+        {% for u in all_users %}
+        { id: {{ u['id'] }}, name: "{{ (u['nom_complet'] or u['username']) | replace('"', '\\"') }}" }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    function openEditDepense(id, desc, montant, cat, date, user_id, paye) {
+        let catOptions = ['Maintenance', 'Nettoyage', '\u00c9lectricit\u00e9', 'S\u00e9curit\u00e9', 'R\u00e9paration', 'Autre'].map(
             c => `<option value="${c}" ${c === cat ? 'selected':''}>${c}</option>`
+        ).join('');
+        
+        let userOptions = '<option value="">-- Syst\u00e8me / Non sp\u00e9cifi\u00e9 --</option>' + ALL_USERS.map(
+            u => `<option value="${u.id}" ${u.id == user_id ? 'selected':''}>${u.name}</option>`
         ).join('');
         
         document.getElementById('genericModalContent').innerHTML = `
             <button class="modal-close" onclick="document.getElementById('genericModal').style.display='none'">&times;</button>
-            <h3 class="text-danger" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-pen"></i> Éditer la Dépense</h3>
+            <h3 class="text-danger" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-pen"></i> \u00c9diter la D\u00e9pense</h3>
             <form action="/admin/depense/edit/${id}" method="POST" style="display: flex; flex-direction: column; gap: 1.2rem;">
                 <div>
-                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Description</label>
-                    <input type="text" name="description" value="${desc.replace(/\"/g, '&quot;')}" class="form-control" required style="width: 100%;">
+                    <label for="edit_dep_desc" style="display:block; margin-bottom:0.4rem; font-weight:bold;">Description</label>
+                    <input type="text" id="edit_dep_desc" name="description" value="${desc.replace(/"/g, '&quot;')}" class="form-control" required style="width: 100%;">
                 </div>
                 <div>
-                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Montant (DA)</label>
-                    <input type="number" step="0.01" name="montant" value="${montant}" class="form-control" required style="width: 100%;">
+                    <label for="edit_dep_montant" style="display:block; margin-bottom:0.4rem; font-weight:bold;">Montant (DA)</label>
+                    <input type="number" step="0.01" id="edit_dep_montant" name="montant" value="${montant}" class="form-control" required style="width: 100%;">
                 </div>
                 <div>
-                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Date Exacte</label>
-                    <input type="date" name="date" value="${date}" class="form-control" required style="width: 100%;">
+                    <label for="edit_dep_date" style="display:block; margin-bottom:0.4rem; font-weight:bold;">Date Exacte</label>
+                    <input type="date" id="edit_dep_date" name="date" value="${date}" class="form-control" required style="width: 100%;">
                 </div>
                 <div>
-                    <label style="display:block; margin-bottom:0.4rem; font-weight:bold;">Catégorie</label>
-                    <select name="categorie" class="form-control" required style="width: 100%;">
+                    <label for="edit_dep_cat" style="display:block; margin-bottom:0.4rem; font-weight:bold;">Catégorie</label>
+                    <select id="edit_dep_cat" name="categorie" class="form-control" required style="width: 100%;">
                         ${catOptions}
                     </select>
                 </div>
-                <button type="submit" class="btn btn-danger" style="padding: 1rem; font-size: 1.1rem; width: 100%;">Mettre à jour</button>
+                <div>
+                    <label for="edit_dep_user" style="display:block; margin-bottom:0.4rem; font-weight:bold;">Payé par</label>
+                    <select id="edit_dep_user" name="user_id" class="form-control" style="width: 100%;">
+                        ${userOptions}
+                    </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem; padding:0.6rem; background:rgba(0,0,0,0.1); border-radius:8px;">
+                    <input type="checkbox" name="paye" id="edit_paye_check" value="1" ${paye ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+                    <label for="edit_paye_check" style="cursor:pointer;margin:0;font-weight:bold;">\u2705 D\u00e9pense Pay\u00e9e</label>
+                </div>
+                <button type="submit" class="btn btn-danger" style="padding: 1rem; font-size: 1.1rem; width: 100%;">Mettre \u00e0 jour</button>
             </form>
         `;
         document.getElementById('genericModal').style.display = 'flex';
     }
+    // Global listeners for data-* buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.edit-cotisation-btn')) {
+            const btn = e.target.closest('.edit-cotisation-btn');
+            openEditCotisation(
+                btn.getAttribute('data-id'),
+                btn.getAttribute('data-montant'),
+                btn.getAttribute('data-annee'),
+                btn.getAttribute('data-date')
+            );
+        } else if (e.target.closest('.edit-depense-btn')) {
+            const btn = e.target.closest('.edit-depense-btn');
+            openEditDepense(
+                btn.getAttribute('data-id'),
+                btn.getAttribute('data-description'),
+                btn.getAttribute('data-montant'),
+                btn.getAttribute('data-categorie'),
+                btn.getAttribute('data-date'),
+                btn.getAttribute('data-user-id'),
+                btn.getAttribute('data-paye') == '1'
+            );
+        }
+    });
 </script>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 <script>
+var easyMDE;
 document.addEventListener('DOMContentLoaded', function() {
     var editorEl = document.getElementById('annonce-editor');
     if (!editorEl) return;
-    var easyMDE = new EasyMDE({
+    easyMDE = new EasyMDE({
         element: editorEl,
         placeholder: "Rédigez votre annonce ici...\n\nExemples:\n# Titre principal\n## Sous-titre\n**Texte en gras** ou _italique_\n- Élément de liste\n> Citation importante",
         spellChecker: false,
@@ -401,6 +499,23 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     });
 });
+
+function preFillAnnonce(titre, desc) {
+    document.getElementById('annonce_titre').value = titre;
+    if (easyMDE) {
+        easyMDE.value("### \ud83d\udca1 Suggestion R\u00e9sident\n\n" + desc);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function preFillPoll(titre) {
+    const qInput = document.getElementsByName('question')[0];
+    if (qInput) {
+        qInput.value = "Sondage : " + titre;
+        qInput.focus();
+        qInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
 
 function openEditAnnonce(id, titre, contenu) {
     document.getElementById('editAnnonceId').value = id;

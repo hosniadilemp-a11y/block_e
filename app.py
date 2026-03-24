@@ -97,9 +97,9 @@ def index():
     annee_str = request.args.get('annee', 'all')
     conn = get_db_connection()
     
-    # 1. SOLDE (GLOBAL TOUS LES TEMPS)
+    # 1. SOLDE (GLOBAL TOUS LES TEMPS) - only count paid expenses
     total_cot_all = conn.execute("SELECT SUM(montant) FROM cotisations").fetchone()[0] or 0
-    total_dep_all = conn.execute("SELECT SUM(montant) FROM depenses").fetchone()[0] or 0
+    total_dep_all = conn.execute("SELECT SUM(montant) FROM depenses WHERE paye").fetchone()[0] or 0
     solde = total_cot_all - total_dep_all
     
     # For display of total "collected this year" vs "spent this year" 
@@ -112,7 +112,7 @@ def index():
         except:
             annee = 2026
         total_cotisations = conn.execute("SELECT SUM(montant) FROM cotisations WHERE annee = ?", (annee,)).fetchone()[0] or 0
-        total_depenses = conn.execute("SELECT SUM(montant) FROM depenses WHERE strftime('%Y', date) = ?", (str(annee),)).fetchone()[0] or 0
+        total_depenses = conn.execute("SELECT SUM(montant) FROM depenses WHERE paye AND strftime('%Y', date) = ?", (str(annee),)).fetchone()[0] or 0
         
     appts = conn.execute("SELECT id FROM users WHERE role = 'resident'").fetchall()
     nb_a_jour = 0
@@ -125,7 +125,7 @@ def index():
             nb_a_jour += 1
     nb_en_retard = len(appts) - nb_a_jour
 
-    polls = conn.execute("SELECT * FROM polls WHERE is_active = 1 ORDER BY created_at DESC").fetchall()
+    polls = conn.execute("SELECT * FROM polls WHERE is_active ORDER BY created_at DESC").fetchall()
     polls_data = []
     for p in polls:
         options = conn.execute("SELECT * FROM poll_options WHERE poll_id = ?", (p['id'],)).fetchall()
@@ -146,9 +146,10 @@ def index():
         })
         
     nb_residents_total = len(appts)
+    # 5. DERNIERES ANNONCES (AJOUT JOIN POUR AUTEUR)
+    annonces = conn.execute("SELECT a.*, u.nom_complet as auteur_nom, u.username as auteur_username FROM annonces a LEFT JOIN users u ON a.user_id = u.id ORDER BY a.date DESC LIMIT 3").fetchall()
     
-    annonces = conn.execute("SELECT * FROM annonces ORDER BY date DESC LIMIT 5").fetchall()
-    
+    # Timeline globale
     timeline_query = """
     SELECT 'cotisation' as type, CAST(c.date AS DATE) as date_str, c.date as full_date, c.montant, 'Cotisation Apt ' || u.appartement_numero as description 
     FROM cotisations c JOIN users u ON c.user_id = u.id
@@ -160,11 +161,11 @@ def index():
     timeline = conn.execute(timeline_query).fetchall()
     
     if annee_str.lower() == 'all':
-        dep_par_mois = conn.execute("SELECT strftime('%m', date) as mois, SUM(montant) FROM depenses GROUP BY mois").fetchall()
-        dep_par_cat = conn.execute("SELECT categorie, SUM(montant) FROM depenses GROUP BY categorie").fetchall()
+        dep_par_mois = conn.execute("SELECT strftime('%m', date) as mois, SUM(montant) FROM depenses WHERE paye GROUP BY mois").fetchall()
+        dep_par_cat = conn.execute("SELECT categorie, SUM(montant) FROM depenses WHERE paye GROUP BY categorie").fetchall()
     else:
-        dep_par_mois = conn.execute("SELECT strftime('%m', date) as mois, SUM(montant) FROM depenses WHERE strftime('%Y', date) = ? GROUP BY mois", (str(annee),)).fetchall()
-        dep_par_cat = conn.execute("SELECT categorie, SUM(montant) FROM depenses WHERE strftime('%Y', date) = ? GROUP BY categorie", (str(annee),)).fetchall()
+        dep_par_mois = conn.execute("SELECT strftime('%m', date) as mois, SUM(montant) FROM depenses WHERE paye AND strftime('%Y', date) = ? GROUP BY mois", (str(annee),)).fetchall()
+        dep_par_cat = conn.execute("SELECT categorie, SUM(montant) FROM depenses WHERE paye AND strftime('%Y', date) = ? GROUP BY categorie", (str(annee),)).fetchall()
         
     chart_evo = {d[0]: d[1] for d in dep_par_mois if d[0]}
     chart_cat = {d[0]: d[1] for d in dep_par_cat}
@@ -198,7 +199,7 @@ def vote(poll_id):
 @login_required
 def annonces():
     conn = get_db_connection()
-    ann_list = conn.execute("SELECT * FROM annonces ORDER BY date DESC").fetchall()
+    ann_list = conn.execute("SELECT a.*, u.nom_complet as auteur_nom, u.username as auteur_username FROM annonces a LEFT JOIN users u ON a.user_id = u.id ORDER BY a.date DESC").fetchall()
     conn.close()
     return render_template('annonces.html', annonces=ann_list)
 
@@ -263,24 +264,24 @@ def depenses():
     annee = request.args.get('annee', 'all')
     conn = get_db_connection()
     
-    q = "SELECT * FROM depenses WHERE 1=1"
+    q = "SELECT d.*, u.nom_complet as paye_nom, u.username as paye_username FROM depenses d LEFT JOIN users u ON d.user_id = u.id WHERE 1=1"
     params = []
     
     if annee != 'all':
-        q += " AND strftime('%Y', date) = ?"
+        q += " AND strftime('%Y', d.date) = ?"
         params.append(str(annee))
         
     if cat:
-        q += " AND categorie = ?"
+        q += " AND d.categorie = ?"
         params.append(cat)
         
-    q += " ORDER BY date DESC"
+    q += " ORDER BY d.date DESC"
     
     deps = conn.execute(q, tuple(params)).fetchall()
     categories_rows = conn.execute("SELECT DISTINCT categorie FROM depenses").fetchall()
     
-    # Calculate Total for current filtered view
-    q_total = "SELECT SUM(montant) FROM depenses WHERE 1=1"
+    # Calculate Total for current filtered view — only paid expenses
+    q_total = "SELECT SUM(montant) FROM depenses WHERE paye != 0"
     if annee != 'all': q_total += " AND strftime('%Y', date) = ?"
     if cat: q_total += " AND categorie = ?"
     
@@ -297,7 +298,7 @@ def depenses():
 @login_required
 def export_depenses():
     conn = get_db_connection()
-    depenses = conn.execute("SELECT date, description, categorie, montant, payePar FROM depenses ORDER BY date").fetchall()
+    depenses = conn.execute("SELECT d.date, d.description, d.categorie, d.montant, COALESCE(u.nom_complet, u.username) as payePar FROM depenses d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.date").fetchall()
     conn.close()
     def generate():
         data = StringIO()
@@ -339,23 +340,23 @@ def export_cotisations():
 def admin_dashboard():
     conn = get_db_connection()
     appts = conn.execute("SELECT * FROM users WHERE role = 'resident' ORDER BY appartement_numero").fetchall()
-    depenses_recentes = conn.execute("SELECT * FROM depenses ORDER BY date DESC LIMIT 40").fetchall()
+    depenses_recentes = conn.execute("SELECT d.*, u.nom_complet as paye_nom, u.username as paye_username FROM depenses d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.date DESC LIMIT 40").fetchall()
     cotisations_recentes = conn.execute("SELECT c.*, u.appartement_numero as numero FROM cotisations c JOIN users u ON c.user_id = u.id ORDER BY c.date DESC LIMIT 40").fetchall()
-    active_polls = conn.execute("SELECT * FROM polls WHERE is_active = 1 ORDER BY created_at DESC").fetchall()
-    annonces_recentes = conn.execute("SELECT * FROM annonces ORDER BY date DESC LIMIT 40").fetchall()
+    active_polls = conn.execute("SELECT * FROM polls WHERE is_active ORDER BY created_at DESC").fetchall()
+    annonces_recentes = conn.execute("SELECT a.*, u.nom_complet as auteur_nom, u.username as auteur_username FROM annonces a LEFT JOIN users u ON a.user_id = u.id ORDER BY a.date DESC LIMIT 40").fetchall()
     system_users = conn.execute("SELECT * FROM users WHERE username != 'admin' ORDER BY role, username").fetchall()
+    all_users = conn.execute("SELECT * FROM users ORDER BY role, nom_complet").fetchall()
+    suggestions = conn.execute("SELECT s.*, u.username, u.nom_complet FROM suggestions s JOIN users u ON s.auteur_id = u.id WHERE s.statut = 'En attente' ORDER BY s.date DESC").fetchall()
     conn.close()
     return render_template('admin/admin_dashboard.html', 
                            appartements=appts, depenses=depenses_recentes,
                            cotisations=cotisations_recentes, active_polls=active_polls,
-                           annonces=annonces_recentes, system_users=system_users)
+                           annonces=annonces_recentes, system_users=system_users,
+                           all_users=all_users, suggestions=suggestions)
 
 @app.route('/admin/logsadmin', methods=['GET'])
 @admin_required
 def admin_logs():
-    if session.get('username') != 'admin':
-        flash("Accès refusé. Journal d'audit réservé au compte Super Admin ('admin').", "danger")
-        return redirect(url_for('admin_dashboard'))
     conn = get_db_connection()
     recent_logs = conn.execute("SELECT l.*, u.username FROM logs l JOIN users u ON l.user_id = u.id ORDER BY l.date DESC LIMIT 500").fetchall()
     conn.close()
@@ -364,6 +365,7 @@ def admin_logs():
 @app.route('/admin/document', methods=['POST'])
 @admin_required
 def upload_document():
+    """Standalone document upload (kept for backwards compat). Redirects to annonces."""
     if 'document' not in request.files: return redirect(url_for('admin_dashboard'))
     file = request.files['document']
     if file.filename == '': return redirect(url_for('admin_dashboard'))
@@ -373,16 +375,13 @@ def upload_document():
     file.save(os.path.join(app.root_path, 'static', os.path.normpath(chemin)))
     
     titre = request.form.get('titre')
-    cat = request.form.get('categorie')
+    cat = request.form.get('categorie', 'Autre')
     annee = request.form.get('annee', datetime.now().year)
     
     conn = get_db_connection()
-    
-    # Auto-create announcement WITH document attached
     contenu_ann = f"Le document '{titre}' pour l'année {annee} vient d'être uploadé. Vous pouvez le visualiser depuis le panneau des annonces via le lien rattaché."
-    conn.execute("INSERT INTO annonces (titre, contenu, date, chemin_document) VALUES (?, ?, ?, ?)", 
-                 (f"📑 Nouveau Document: {titre} ({cat})", contenu_ann, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), chemin))
-                 
+    conn.execute("INSERT INTO annonces (titre, contenu, date, chemin_document, user_id) VALUES (?, ?, ?, ?, ?)", 
+                 (f"📑 Nouveau Document: {titre} ({cat})", contenu_ann, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), chemin, session['user_id']))
     conn.commit()
     conn.close()
     add_log(session['user_id'], 'Upload Document -> Annonces', f'Titre: {titre}')
@@ -396,7 +395,7 @@ def add_annonce():
     contenu = request.form.get('contenu')
     if titre and contenu:
         conn = get_db_connection()
-        conn.execute("INSERT INTO annonces (titre, contenu, date) VALUES (?, ?, ?)", (titre, contenu, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        conn.execute("INSERT INTO annonces (titre, contenu, date, user_id) VALUES (?, ?, ?, ?)", (titre, contenu, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session['user_id']))
         conn.commit()
         conn.close()
         add_log(session['user_id'], 'Ajout Annonce', f'Titre: {titre}')
@@ -481,16 +480,64 @@ def edit_depense(id):
     mont = request.form.get('montant')
     cat = request.form.get('categorie')
     date_val = request.form.get('date')
+    user_id_val = request.form.get('user_id')
+    if user_id_val == '': user_id_val = None
+    paye_val = True if request.form.get('paye') else False
     if desc and mont:
         conn = get_db_connection()
+        # Fetch current state to see if 'paye' status changed
+        current_depense = conn.execute("SELECT paye FROM depenses WHERE id = ?", (id,)).fetchone()
+        was_paid = current_depense['paye'] if current_depense else True # Default to true to avoid double announce
+        
         if date_val:
-            conn.execute("UPDATE depenses SET description = ?, montant = ?, categorie = ?, date = ? WHERE id = ?", (desc, float(mont), cat, date_val, id))
+            conn.execute("UPDATE depenses SET description = ?, montant = ?, categorie = ?, date = ?, user_id = ?, paye = ? WHERE id = ?", (desc, float(mont), cat, date_val, user_id_val, paye_val, id))
         else:
-            conn.execute("UPDATE depenses SET description = ?, montant = ?, categorie = ? WHERE id = ?", (desc, float(mont), cat, id))
+            conn.execute("UPDATE depenses SET description = ?, montant = ?, categorie = ?, user_id = ?, paye = ? WHERE id = ?", (desc, float(mont), cat, user_id_val, paye_val, id))
+        
+        # If it was NOT paid and now it IS paid, publish announcement
+        if not was_paid and paye_val:
+            titre = f"✅ Dépense Payée : {desc}"
+            contenu = (
+                f"### 💸 Dépense Marquée comme Payée\n"
+                f"- **Objet** : {desc}\n"
+                f"- **Montant** : {float(mont):,.0f} DA\n"
+                f"- **Catégorie** : {cat}\n\n"
+                f"Cette dépense a été mise à jour et marquée comme payée."
+            )
+            conn.execute("INSERT INTO annonces (titre, contenu, date, user_id) VALUES (?, ?, ?, ?)",
+                         (titre, contenu, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session['user_id']))
+        
         conn.commit()
         conn.close()
         add_log(session['user_id'], 'Edition Dépense', f'ID {id} -> {desc}')
         flash("Dépense mise à jour.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/depense/pay/<int:id>', methods=['POST'])
+@admin_required
+def pay_depense(id):
+    conn = get_db_connection()
+    depense = conn.execute("SELECT * FROM depenses WHERE id = ?", (id,)).fetchone()
+    if depense:
+        conn.execute("UPDATE depenses SET paye = TRUE WHERE id = ?", (id,))
+        
+        # Auto-publish announcement
+        titre = f"✅ Dépense Payée : {depense['description']}"
+        contenu = (
+            f"### 💸 Dépense Marquée comme Payée\n"
+            f"- **Objet** : {depense['description']}\n"
+            f"- **Montant** : {float(depense['montant'] or 0):,.0f} DA\n"
+            f"- **Catégorie** : {depense['categorie']}\n"
+            f"- **Date** : {depense['date'][:10]}\n\n"
+            f"Cette dépense est désormais comptabilisée dans le solde de l'immeuble."
+        )
+        conn.execute("INSERT INTO annonces (titre, contenu, date, user_id) VALUES (?, ?, ?, ?)",
+                     (titre, contenu, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session['user_id']))
+        
+        conn.commit()
+        add_log(session['user_id'], 'Dépense Marquée Payée', f'ID {id}')
+        flash("Dépense marquée comme payée et annonce publiée.", "success")
+    conn.close()
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/cotisation/edit/<int:id>', methods=['POST'])
@@ -519,19 +566,45 @@ def add_depense():
     desc = request.form.get('description')
     mont = float(request.form.get('montant', 0))
     cat = request.form.get('categorie')
-    paye = request.form.get('payePar')
+    user_id_val = request.form.get('user_id')
+    if user_id_val == '': user_id_val = None
     date_val = request.form.get('date') or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    paye_val = True if request.form.get('paye') else False
     if ' ' not in date_val: date_val += " 12:00:00"
     
     if desc and mont >= 0:
         conn = get_db_connection()
         total_cot = conn.execute("SELECT SUM(montant) FROM cotisations").fetchone()[0] or Decimal('0')
-        total_dep = conn.execute("SELECT SUM(montant) FROM depenses").fetchone()[0] or Decimal('0')
-        solde_apres = Decimal(total_cot) - Decimal(total_dep) - Decimal(str(mont))
+        total_dep = conn.execute("SELECT SUM(montant) FROM depenses WHERE paye").fetchone()[0] or Decimal('0')
+        solde_apres = Decimal(total_cot) - Decimal(total_dep) - Decimal(str(mont)) if paye_val else Decimal(total_cot) - Decimal(total_dep)
         
-        conn.execute("INSERT INTO depenses (description, montant, date, categorie, payePar, soldeApres) VALUES (?, ?, ?, ?, ?, ?)",
-                    (desc, Decimal(str(mont)), date_val, cat, paye, solde_apres))
+        conn.execute("INSERT INTO depenses (description, montant, date, categorie, user_id, soldeApres, paye) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (desc, Decimal(str(mont)), date_val, cat, user_id_val, solde_apres, paye_val))
         conn.commit()
+        
+        # Handle optional document upload — auto-publish announcement
+        if 'document' in request.files and request.files['document'].filename != '':
+            file = request.files['document']
+            filename = secure_filename(file.filename)
+            chemin = f"uploads/{filename}"
+            file.save(os.path.join(app.root_path, 'static', os.path.normpath(chemin)))
+            
+            contenu_ann = (
+                f"### 💸 Dépense : {desc}\n"
+                f"- **Catégorie** : {cat}\n"
+                f"- **Montant** : {mont:,.0f} DA\n"
+                f"- **Date** : {date_val[:10]}\n"
+                f"- **Statut** : {'✅ Payé' if paye_val else '⏳ Non Payé'}\n\n"
+                f"Un justificatif est joint à cette dépense."
+            )
+            conn.execute(
+                "INSERT INTO annonces (titre, contenu, date, chemin_document, user_id) VALUES (?, ?, ?, ?, ?)",
+                (f"📑 Dépense Documentée : {desc} ({cat})", contenu_ann,
+                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"), chemin, session['user_id'])
+            )
+            conn.commit()
+            add_log(session['user_id'], 'Dépense + Document -> Annonce', f'{desc}')
+        
         conn.close()
         add_log(session['user_id'], 'Ajout Dépense', f'Montant: {mont}, Date: {date_val}')
         flash("Dépense ajoutée.", "success")
@@ -566,28 +639,80 @@ def add_poll():
         add_log(session['user_id'], 'Ajout Sondage', f'Question: {question}')
         flash("Sondage créé.", "success")
     return redirect(url_for('admin_dashboard'))
-
 @app.route('/admin/poll/close/<int:id>', methods=['POST'])
 @admin_required
 def close_poll(id):
     conn = get_db_connection()
     poll = conn.execute("SELECT * FROM polls WHERE id = ?", (id,)).fetchone()
     if poll:
-        opts = conn.execute("SELECT * FROM poll_options WHERE poll_id = ?", (id,)).fetchall()
-        total_votes = conn.execute("SELECT COUNT(*) FROM votes WHERE poll_id = ?", (id,)).fetchone()[0]
+        # Get results
+        results = conn.execute("""
+            SELECT o.texte, COUNT(v.id) as count
+            FROM poll_options o
+            LEFT JOIN votes v ON o.id = v.option_id
+            WHERE o.poll_id = ?
+            GROUP BY o.id
+        """, (id,)).fetchall()
         
-        results_text = f"Le sondage '{poll['question']}' est terminé avec {total_votes} votes au total.\n\nRésultats :\n"
-        for opt in opts:
-            votes = conn.execute("SELECT COUNT(*) FROM votes WHERE option_id = ?", (opt['id'],)).fetchone()[0]
-            pct = (votes / total_votes * 100) if total_votes > 0 else 0
-            results_text += f"- {opt['texte']} : {int(pct)}% ({votes} votes)\n"
-            
-        conn.execute("UPDATE polls SET is_active = 0 WHERE id = ?", (id,))
-        conn.execute("INSERT INTO annonces (titre, contenu, date) VALUES (?, ?, ?)", 
-                 (f"📊 Résultats du Sondage: {poll['question']}", results_text, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        res_str = "\n".join([f"- {r['texte']} : {r['count']} votes" for r in results])
+        contenu = f"Le sondage '{poll['question']}' est clôturé.\n\n**Résultats :**\n{res_str}"
+        
+        # Mark as inactive
+        conn.execute("UPDATE polls SET is_active = FALSE WHERE id = ?", (id,))
+        
+        # Publish announcement
+        conn.execute("INSERT INTO annonces (titre, contenu, user_id) VALUES (?, ?, ?)",
+                     (f"Résultats : {poll['question']}", contenu, session['user_id']))
+        
         conn.commit()
-        add_log(session['user_id'], 'Clôture Sondage', f'Poll ID {id}')
-        flash("Sondage clôturé et résultats publiés dans les annonces.", "success")
+    conn.close()
+    add_log(session['user_id'], 'Clôture Sondage', f'ID {id}')
+    flash("Sondage clôturé et résultats publiés.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/poll/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_poll(id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM polls WHERE id = ?", (id,))
+    # poll_options and votes are deleted via CASCADE in schema_postgres.sql
+    # For SQLite, we might need manual delete if PRAGMA foreign_keys is not on
+    conn.execute("DELETE FROM poll_options WHERE poll_id = ?", (id,))
+    conn.execute("DELETE FROM votes WHERE poll_id = ?", (id,))
+    conn.commit()
+    conn.close()
+    add_log(session['user_id'], 'Suppression Sondage', f'ID {id}')
+    flash("Sondage supprimé.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/suggestion/add', methods=['POST'])
+@login_required
+def add_suggestion():
+    titre = request.form.get('titre')
+    desc = request.form.get('description')
+    if titre and desc:
+        conn = get_db_connection()
+        conn.execute("INSERT INTO suggestions (titre, description, auteur_id) VALUES (?, ?, ?)",
+                     (titre, desc, session['user_id']))
+        conn.commit()
+        conn.close()
+        add_log(session['user_id'], 'Ajout Suggestion', f'Titre: {titre}')
+        flash("Merci pour votre suggestion ! Elle sera examinée par l'administration.", "success")
+    return redirect(url_for('index'))
+
+@app.route('/admin/suggestion/action/<int:id>', methods=['POST'])
+@admin_required
+def admin_suggestion_action(id):
+    action = request.form.get('action')
+    conn = get_db_connection()
+    if action == 'delete':
+        conn.execute("DELETE FROM suggestions WHERE id = ?", (id,))
+        flash("Suggestion supprimée.", "info")
+    elif action == 'approve':
+        conn.execute("UPDATE suggestions SET statut = 'Approuvée' WHERE id = ?", (id,))
+        flash("Suggestion marquée comme approuvée.", "success")
+    conn.commit()
     conn.close()
     return redirect(url_for('admin_dashboard'))
 
@@ -596,6 +721,7 @@ def close_poll(id):
 def profile():
     conn = get_db_connection()
     user = conn.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+    mes_cotisations = conn.execute("SELECT * FROM cotisations WHERE user_id = ? ORDER BY date DESC", (session['user_id'],)).fetchall()
     
     if request.method == 'POST':
         new_username = request.form.get('new_username')
@@ -639,7 +765,7 @@ def profile():
             flash("Profil mis à jour avec succès.", "success")
             
     conn.close()
-    return render_template('profile.html', user=user)
+    return render_template('profile.html', user=user, cotisations=mes_cotisations)
 
 @app.route('/admin/users/add', methods=['POST'])
 @admin_required

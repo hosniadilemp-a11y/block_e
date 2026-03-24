@@ -4,6 +4,12 @@ import re
 import datetime as dt
 from dotenv import load_dotenv
 
+try:
+    from psycopg2 import OperationalError, InterfaceError
+except ImportError:
+    OperationalError = Exception
+    InterfaceError = Exception
+
 load_dotenv()
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -62,11 +68,17 @@ class UnifiedCursor:
             query = re.sub(r"strftime\(['\"]%Y['\"],\s*([^)]+)\)", r"TO_CHAR(\1, 'YYYY')", query, flags=re.IGNORECASE)
             query = re.sub(r"strftime\(['\"]%m['\"],\s*([^)]+)\)", r"TO_CHAR(\1, 'MM')", query, flags=re.IGNORECASE)
 
-            # 2. Boolean: is_active = 1 -> is_active = TRUE
+            # 2. Boolean: is_active and paye integer <-> PostgreSQL boolean
             query = re.sub(r'\b(is_active)\s*=\s*1\b', r'\1 = TRUE', query, flags=re.IGNORECASE)
             query = re.sub(r'\b(is_active)\s*=\s*0\b', r'\1 = FALSE', query, flags=re.IGNORECASE)
             query = re.sub(r'SET\s+(is_active)\s*=\s*1\b', r'SET \1 = TRUE', query, flags=re.IGNORECASE)
             query = re.sub(r'SET\s+(is_active)\s*=\s*0\b', r'SET \1 = FALSE', query, flags=re.IGNORECASE)
+            # paye column
+            query = re.sub(r'\b(paye)\s*!=\s*0\b', r'\1 = TRUE', query, flags=re.IGNORECASE)
+            query = re.sub(r'\b(paye)\s*=\s*1\b', r'\1 = TRUE', query, flags=re.IGNORECASE)
+            query = re.sub(r'\b(paye)\s*=\s*0\b', r'\1 = FALSE', query, flags=re.IGNORECASE)
+            query = re.sub(r'SET\s+(paye)\s*=\s*1\b', r'SET \1 = TRUE', query, flags=re.IGNORECASE)
+            query = re.sub(r'SET\s+(paye)\s*=\s*0\b', r'SET \1 = FALSE', query, flags=re.IGNORECASE)
 
             # 3. Auto RETURNING id for INSERT
             is_insert = query.strip().upper().startswith('INSERT')
@@ -159,9 +171,29 @@ class UnifiedConnection:
 def get_db_connection():
     pool = _get_pool()
     if pool:
-        conn = pool.getconn()
-        conn.autocommit = False
-        return UnifiedConnection(conn, True, pool=pool)
+        try:
+            conn = pool.getconn()
+            # ── Health check ───────────────────────────────────────────────────
+            if conn.closed or conn.status != 0: # 0 is extensions.STATUS_READY
+                pool.putconn(conn, close=True)
+                conn = pool.getconn()
+            
+            # Final check: attempt a very light query
+            try:
+                with conn.cursor() as tmp:
+                    tmp.execute("SELECT 1")
+                conn.rollback() # <--- Ensure no transaction is left open by the test query
+            except (OperationalError, InterfaceError):
+                pool.putconn(conn, close=True)
+                conn = pool.getconn()
+            # ──────────────────────────────────────────────────────────────────
+            
+            conn.autocommit = False
+            return UnifiedConnection(conn, True, pool=pool)
+        except Exception as e:
+            # If we fail to get a valid connection, we could try to re-initialize pool
+            # or simply let it bubble up for now.
+            raise e
     else:
         db_path = os.environ.get('SQLITE_DB', 'database.db')
         conn = sqlite3.connect(db_path)

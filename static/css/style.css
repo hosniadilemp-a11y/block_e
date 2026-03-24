@@ -211,6 +211,47 @@ tr:hover td { background: var(--border-light); }
     -webkit-overflow-scrolling: touch;
 }
 
+/* Modals */
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-content {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 2.5rem;
+    border-radius: var(--border-radius);
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: modalSlide 0.3s ease-out;
+}
+@keyframes modalSlide {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.modal-close {
+    position: absolute;
+    top: 1rem; right: 1.5rem;
+    font-size: 2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    background: none; 
+    border: none;
+}
+.modal-close:hover { color: var(--danger); }
+
 /* Modals Responsive */
 @media (max-width: 480px) {
     .modal-content {

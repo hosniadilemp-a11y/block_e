@@ -49,7 +49,7 @@ CREATE TABLE depenses (
     montant REAL NOT NULL,
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     categorie TEXT NOT NULL,
-    payePar TEXT NOT NULL,
+    user_id INTEGER REFERENCES users(id),
     soldeApres REAL NOT NULL,
     document TEXT
 );
@@ -103,7 +103,9 @@ CREATE TABLE annonces (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     titre TEXT NOT NULL,
     contenu TEXT NOT NULL,
-    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    chemin_document TEXT,
+    user_id INTEGER REFERENCES users(id)
 );
 
 CREATE TABLE logs (

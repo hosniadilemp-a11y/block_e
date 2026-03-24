@@ -16,3 +16,8 @@ static/uploads/*
 # OS
 .DS_Store
 Thumbs.db
+
+# Sensitive / Temporary
+user_logins.txt
+reset_passwords.py
+tmp_*.py

@@ -41,12 +41,15 @@
             </thead>
             <tbody>
                 {% for d in depenses %}
-                <tr>
+                <tr style="{% if not d['paye'] %}background: rgba(249,115,22,0.1);{% endif %}">
                     <td class="text-muted" style="font-size: 0.9rem;">{{ d['date'] }}</td>
-                    <td style="font-weight: 500;">{{ d['description'] }}</td>
+                    <td style="font-weight: 500;">
+                        {{ d['description'] }}
+                        {% if not d['paye'] %}<span style="background:#f97316; color:#fff; font-size:0.7rem; padding:0.15rem 0.45rem; border-radius:4px; margin-left:0.4rem;">⏳ Non Payé</span>{% endif %}
+                    </td>
                     <td><span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ d['categorie'] }}</span></td>
-                    <td>{{ d['payePar'] }}</td>
-                    <td class="text-danger" style="text-align: right; font-weight: bold;">- {{ "{:,.0f}".format(d['montant']).replace(',', ' ') }} DA</td>
+                    <td>{{ d['paye_nom'] or d['paye_username'] or 'Système/Inconnu' }}</td>
+                    <td class="text-danger" style="text-align: right; font-weight: bold;{% if not d['paye'] %} opacity:0.5;{% endif %}">- {{ "{:,.0f}".format(d['montant']).replace(',', ' ') }} DA</td>
                 </tr>
                 {% else %}
                 <tr>

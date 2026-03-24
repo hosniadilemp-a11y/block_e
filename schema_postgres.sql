@@ -46,7 +46,7 @@ CREATE TABLE depenses (
     montant DECIMAL(12, 2) NOT NULL,
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     categorie TEXT NOT NULL,
-    payePar TEXT,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     soldeApres DECIMAL(12, 2) NOT NULL DEFAULT 0,
     document TEXT
 );
@@ -94,7 +94,8 @@ CREATE TABLE annonces (
     titre TEXT NOT NULL,
     contenu TEXT NOT NULL,
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    chemin_document TEXT
+    chemin_document TEXT,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE logs (

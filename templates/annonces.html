@@ -24,6 +24,7 @@
         <!-- Date Badge -->
         <div style="position: absolute; top: -15px; left: 20px; background: var(--bg-main); border: 1px solid var(--border-light); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: bold; color: var(--text-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <i class="fa-regular fa-clock {% if annonce['chemin_document'] %}text-success{% else %}text-accent{% endif %}"></i> {{ annonce['date'] }}
+            <span style="margin-left: 10px; font-weight: 500; opacity: 0.8;"><i class="fa-regular fa-user"></i> {{ annonce['auteur_nom'] or annonce['auteur_username'] or 'Système' }}</span>
         </div>
         
         <h3 style="font-size: 1.5rem; margin-top: 0.5rem; margin-bottom: 1rem; color: {% if annonce['chemin_document'] %}var(--success){% else %}var(--accent){% endif %};">

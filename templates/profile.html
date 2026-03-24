@@ -32,4 +32,28 @@
         <button type="submit" class="btn btn-primary" style="padding: 1rem;"><i class="fa-solid fa-floppy-disk"></i> Enregistrer les modifications</button>
     </form>
 </div>
+
+<div class="glass-panel" style="max-width: 600px; margin: 2rem auto; padding: 2rem;">
+    <h3 style="margin-bottom: 1.5rem; text-align: center; color: var(--success);"><i class="fa-solid fa-file-invoice-dollar"></i> Mon Historique de Paiement</h3>
+    {% if cotisations %}
+    <ul style="list-style: none; padding: 0;">
+        {% for c in cotisations %}
+        <li style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border-light);">
+            <div>
+                <span style="font-weight: bold; font-size: 1.1rem;">{{ c['date'][:10] }}</span><br>
+                <small class="text-muted">Année relative : {{ c['annee'] }}</small>
+            </div>
+            <div style="text-align: right;">
+                <span class="text-success" style="font-weight: 800; font-size: 1.2rem;">+ {{ "{:,.0f}".format(c['montant']).replace(',', ' ') }} DA</span>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div style="text-align: center; padding: 2rem 0;">
+        <i class="fa-solid fa-receipt text-muted" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+        <p class="text-muted">Aucune cotisation enregistrée à ce jour.</p>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
